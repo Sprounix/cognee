@@ -311,13 +311,13 @@ class PGVectorAdapter(SQLAlchemyAdapter, VectorDBInterface):
             return []
 
         # Normalize vector distance and add this as score information to vector_list
-        normalized_values = normalize_distances(vector_list)
-        for i in range(0, len(normalized_values)):
-            vector_list[i]["score"] = normalized_values[i]
+        # normalized_values = normalize_distances(vector_list)
+        # for i in range(0, len(normalized_values)):
+        #     vector_list[i]["score"] = normalized_values[i]
 
         # Create and return ScoredResult objects
         return [
-            ScoredResult(id=row.get("id"), payload=row.get("payload"), score=row.get("score"))
+            ScoredResult(id=row.get("id"), payload=row.get("payload"), score=row.get("_distance", 1))
             for row in vector_list
         ]
 
