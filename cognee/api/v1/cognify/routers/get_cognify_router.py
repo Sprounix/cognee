@@ -1,4 +1,5 @@
 import os
+import json
 import asyncio
 from uuid import UUID
 from pydantic import BaseModel
@@ -24,6 +25,8 @@ from cognee.modules.pipelines.queues.pipeline_run_info_queues import (
     remove_queue,
 )
 from cognee.shared.logging_utils import get_logger
+from typing import Dict
+from cognee.extensions.schemas.job import Job
 
 
 logger = get_logger("api.cognify")
@@ -36,8 +39,41 @@ class CognifyPayloadDTO(InDTO):
     run_in_background: Optional[bool] = False
 
 
+class AddAndCognifyPayloadDTO(BaseModel):
+    job: Dict = None
+    run_in_background: Optional[bool] = False
+
+
 def get_cognify_router() -> APIRouter:
     router = APIRouter()
+
+    @router.post("/job", response_model=dict)
+    async def add_and_cognify(payload: AddAndCognifyPayloadDTO):
+        """This endpoint is responsible for the cognitive processing of the content."""
+        if not payload.job:
+            return JSONResponse(
+                status_code=400, content={"error": "job required"}
+            )
+
+        from cognee.api.v1.add import add as cognee_add
+
+        job_id = payload.job["id"]
+        job_str = json.dumps(payload.job, ensure_ascii=False)
+
+        dataset_name = f"{job_id}"
+        add_result = await cognee_add(job_str, dataset_name=dataset_name, node_set=["job"])
+        logger.info(f"add result: {add_result}")
+
+        from cognee.api.v1.cognify import cognify as cognee_cognify
+        chunk_size = 8000
+
+        try:
+            cognify_run = await cognee_cognify(
+                dataset_name, None, Job, chunk_size=chunk_size, run_in_background=payload.run_in_background
+            )
+            return cognify_run
+        except Exception as error:
+            return JSONResponse(status_code=409, content={"error": str(error)})
 
     @router.post("", response_model=dict)
     async def cognify(payload: CognifyPayloadDTO, user: User = Depends(get_authenticated_user)):
