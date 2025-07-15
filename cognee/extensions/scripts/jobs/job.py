@@ -3,9 +3,9 @@ import csv
 import json
 import os
 import time
+
 import cognee
 from cognee.extensions.schemas.job import Job
-from cognee.infrastructure.llm.config import get_llm_config
 
 
 async def clearn_all_data():
@@ -16,20 +16,21 @@ async def clearn_all_data():
     print("All files deleted.")
 
 
-async def add_and_cognify_from_csv(file_path, prune=False, limit=1):
+async def add_and_cognify_from_csv(file_path, prune=False, limit=(0, 10)):
     if prune:
         await clearn_all_data()
     with open(file_path, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
-        jobs = [{key: value for key, value in row.items() if key in ["id", "title", "description"]} for row in reader]
+        jobs = [{key: value for key, value in row.items() if key in ["new_id", "title", "description"]} for row in reader]
     if not jobs:
         print("not exist jobs")
         return
-    jobs = jobs[51:60]
+    jobs = jobs[limit[0]:limit[1]]
     for job in jobs:
-        job_id = job.pop("id", None)
+        job_id = job.pop("new_id", None)
         if not job_id:
             continue
+        job["id"] = job_id
         job_str = json.dumps(job, ensure_ascii=False)
         try:
             start_time = time.time()
@@ -49,14 +50,8 @@ async def add_and_cognify_from_csv(file_path, prune=False, limit=1):
 
 
 if __name__ == "__main__":
-    config = get_llm_config()
     base_dir = os.path.dirname(__file__)
-    graph_prompt_path = os.path.join(base_dir, "../../prompts", "job-extraction.txt")
-    print("graph_prompt_path:", graph_prompt_path)
-
-    # config.graph_prompt_path = graph_prompt_path
-
-    csv_file = os.path.join(base_dir, "../../data", "jobs1000.csv")
+    csv_file = os.path.join(base_dir, "../../data", "jobs1000_new.csv")
     asyncio.run(
-        add_and_cognify_from_csv(csv_file, prune=False, limit=10)
+        add_and_cognify_from_csv(csv_file, prune=True, limit=(0, 10))
     )

@@ -167,6 +167,7 @@ async def get_jobs_by_skill_matching(tags: List[str], distance_threshold=0.2, to
 
 if __name__ == "__main__":
     search_keywords = ["python", "docker", "snowflake", "sql"]
+    search_keywords = ["crisis management", "communication"]
     results = asyncio.run(
         get_jobs_by_skill_matching(search_keywords, distance_threshold=0.5)
     )
