@@ -123,7 +123,7 @@ class ResponsibilityItem(DataPoint):
 class Job(DataPoint):
     """
     Extracted job information with complete required parameters and valid data types.
-    The `id` must be returned in UUIDv4 format; otherwise, processing errors will occur.
+    Use the provided `iid` as the job `id`.
     """
     title: str = Field(
         title="Job Title",
@@ -143,7 +143,7 @@ class Job(DataPoint):
         default=[],
         title="Work Locations",
         description='All specified work locations. Look for city/state names. Also, explicitly identify if the role is "Remote", "Hybrid", or "On-site".',
-        examples=["United States", "Remote", "Hybrid", "On-site"]
+        examples=[{"name": "United States"}, {"name": "Remote"},]
     )
     # work_years: List[str] = Field(
     #     default=[],
