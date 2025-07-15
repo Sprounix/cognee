@@ -6,7 +6,7 @@ import time
 import cognee
 from cognee.extensions.schemas.job import Job
 from cognee.infrastructure.llm.config import get_llm_config
-
+from cognee.infrastructure.databases.relational.config import get_relational_config
 
 async def clearn_all_data():
     # nest_asyncio.apply()
@@ -25,7 +25,7 @@ async def add_and_cognify_from_csv(file_path, prune=False, limit=1):
     if not jobs:
         print("not exist jobs")
         return
-    jobs = jobs[51:60]
+    jobs = jobs[:30]
     for job in jobs:
         job_id = job.pop("id", None)
         if not job_id:
@@ -50,6 +50,8 @@ async def add_and_cognify_from_csv(file_path, prune=False, limit=1):
 
 if __name__ == "__main__":
     config = get_llm_config()
+    #print(get_relational_config().to_dict())
+    #exit(0)
     base_dir = os.path.dirname(__file__)
     graph_prompt_path = os.path.join(base_dir, "../../prompts", "job-extraction.txt")
     print("graph_prompt_path:", graph_prompt_path)
