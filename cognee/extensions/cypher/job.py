@@ -1,12 +1,27 @@
-import asyncio
 from typing import List, Dict
 
 from cognee.infrastructure.databases.graph import get_graph_engine
 
 
-async def get_jobs(job_ids) -> List[Dict]:
+async def query(cypher):
     graph_engine = await get_graph_engine()
+    results = await graph_engine.query(cypher)
+    return results
 
+
+async def get_job_ids_by_skills(skill_ids) -> List[str]:
+    cypher = f"MATCH (Job:Job)-[r:skills]->(skill:JobSkill) WHERE skill.id IN {skill_ids} RETURN collect(DISTINCT Job.id) AS job_ids"
+    results = await query(cypher)
+    return results[0]["job_ids"] if results else []
+
+
+async def get_job_skill_ids(job_ids) -> List[Dict]:
+    cypher = f"MATCH(Job:Job)-[r:skills]->(skill:JobSkill) WHERE Job.id IN {job_ids} RETURN collect(DISTINCT skill.id) AS skills, Job.id AS job_id"
+    results = await query(cypher)
+    return results
+
+
+async def get_jobs(job_ids) -> List[Dict]:
     cypher = f"""MATCH (job:Job)
     WHERE job.id in {job_ids}""" + """
     
@@ -24,7 +39,7 @@ async def get_jobs(job_ids) -> List[Dict]:
       COLLECT(DISTINCT {id: reqItem.id, category: reqItem.category, item: reqItem.item}) AS required,
       COLLECT(DISTINCT {id: prefItem.id, category: prefItem.category, item: prefItem.item}) AS preferred,
       COLLECT(DISTINCT {id: resp.id, item: resp.item}) AS responsibilities,
-      COLLECT(DISTINCT {id: major.id, name: major.name}) AS majors      
+      COLLECT(DISTINCT {id: major.id, name: major.name}) AS majors
 
     RETURN {
       id: job.id,
@@ -41,14 +56,5 @@ async def get_jobs(job_ids) -> List[Dict]:
       responsibilities: responsibilities
     } AS job_json
     """
-    results = await graph_engine.query(cypher)
+    results = await query(cypher)
     return [r["job_json"] for r in results]
-
-
-if __name__ == "__main__":
-    find_job_ids = ["fb9dc111-ae97-40d8-9ae2-5265ebb4173c", "4b5fb349-02a5-43ed-a51f-4b4c5358b632"]
-    results = asyncio.run(get_jobs(find_job_ids))
-    print("xxx"*10)
-    import json
-    for job in results:
-        print(json.dumps(job, ensure_ascii=False, indent=2))

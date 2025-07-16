@@ -123,7 +123,7 @@ class ResponsibilityItem(DataPoint):
 class Job(DataPoint):
     """
     Extracted job information with complete required parameters and valid data types.
-    Use the provided `iid` as the job `id`.
+    Use the provided `id` as the job `id`.
     """
     title: str = Field(
         title="Job Title",

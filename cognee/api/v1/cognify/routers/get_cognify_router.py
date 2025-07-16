@@ -27,6 +27,7 @@ from cognee.modules.pipelines.queues.pipeline_run_info_queues import (
 from cognee.shared.logging_utils import get_logger
 from typing import Dict
 from cognee.extensions.schemas.job import Job
+from cognee.extensions.chunking.TextChunker import TextChunker
 
 
 logger = get_logger("api.cognify")
@@ -65,11 +66,9 @@ def get_cognify_router() -> APIRouter:
         logger.info(f"add result: {add_result}")
 
         from cognee.api.v1.cognify import cognify as cognee_cognify
-        chunk_size = 8000
-
         try:
             cognify_run = await cognee_cognify(
-                dataset_name, None, Job, chunk_size=chunk_size, run_in_background=payload.run_in_background
+                dataset_name, None, Job, chunker=TextChunker, run_in_background=payload.run_in_background
             )
             return cognify_run
         except Exception as error:

@@ -4,13 +4,14 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from cognee.extensions.scripts.jobs.skill_recall_job import get_jobs_by_skill_matching
+from cognee.extensions.tasks.match_jobs import get_match_jobs
 from cognee.modules.users.exceptions.exceptions import PermissionDeniedError
 
 
 class RecommendJobPayloadDTO(BaseModel):
     app_user_id: Optional[str] = None
-    skills: Optional[list[str]] = None
+    desired_position: Optional[dict] = None
+    resume: Optional[dict] = None
 
 
 def get_recall_router() -> APIRouter:
@@ -20,12 +21,11 @@ def get_recall_router() -> APIRouter:
     async def recommend_job(payload: RecommendJobPayloadDTO):
         """recommend job"""
         try:
-            results = await get_jobs_by_skill_matching(
-                payload.skills,
-                distance_threshold=0.5,
-                top_k=12,
+            jobs = await get_match_jobs(
+                payload.desired_position,
+                payload.resume
             )
-            return [{"job_id": result[0], "score": result[1]} for result in results]
+            return jobs
         except PermissionDeniedError:
             return []
         except Exception as error:

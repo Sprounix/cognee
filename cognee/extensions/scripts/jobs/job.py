@@ -6,6 +6,7 @@ import time
 
 import cognee
 from cognee.extensions.schemas.job import Job
+from cognee.extensions.chunking.TextChunker import TextChunker
 
 async def clearn_all_data():
     # nest_asyncio.apply()
@@ -39,7 +40,7 @@ async def add_and_cognify_from_csv(file_path, prune=False, limit=(0, 10)):
             cognify_result = await cognee.cognify(
                 datasets=dataset_name,
                 graph_model=Job,
-                chunk_size=5000
+                chunker=TextChunker,
             )
             end_time = time.time()
             print(f"{dataset_name} cognify_result: {cognify_result}, cost: {end_time-start_time}")
