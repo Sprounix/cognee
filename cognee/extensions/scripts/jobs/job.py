@@ -25,7 +25,7 @@ async def add_and_cognify_from_csv(file_path, prune=False, limit=(0, 10)):
     if not jobs:
         print("not exist jobs")
         return
-    jobs = jobs[:30]
+    jobs = jobs[limit[0]: limit[1]]
     for job in jobs:
         job_id = job.pop("new_id", None)
         if not job_id:
@@ -53,5 +53,5 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(__file__)
     csv_file = os.path.join(base_dir, "../../data", "jobs1000_new.csv")
     asyncio.run(
-        add_and_cognify_from_csv(csv_file, prune=True, limit=(0, 10))
+        add_and_cognify_from_csv(csv_file, prune=True, limit=(50, 55))
     )

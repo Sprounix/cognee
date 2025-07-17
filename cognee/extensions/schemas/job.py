@@ -1,7 +1,8 @@
+from uuid import UUID, uuid4
 from enum import Enum
 from typing import List, Dict, Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from cognee.low_level import DataPoint
 
@@ -123,22 +124,26 @@ class ResponsibilityItem(DataPoint):
 class Job(DataPoint):
     """
     Extracted job information with complete required parameters and valid data types.
-    Use the provided `id` as the job `id`.
     """
+    id: UUID = Field(
+        default_factory=uuid4,
+        title="Job ID",
+        description="Use the provided `id` as the job `id`.",
+    )
     title: str = Field(
         title="Job Title",
-        description="Work location requirements",
+        description="Job Title",
     )
-    job_level: List[JobLevelEnum] = Field(
+    job_level: List[str] = Field(
         title="Job level",
-        description="Job level",
+        description="Job level include Internship, Entry-level, Junior, Mid-level, Senior, Lead, Principal, Staff, Manager, Director, Executive, Other",
         examples=["Senior"]
     )
-    # job_functions: List[JobFunction] = Field(
-    #     default=[],
-    #     title="Job functions",
-    #     description="Core functional tags of the job",
-    # )
+    job_function: JobFunction = Field(
+        title="Job function",
+        description="Extract the core job title,  (i.e., the standard name of the position, such as `Python Engineer` or `Product Manager`) from the given job title, ignoring non-job title information such as location, industry direction, experience requirements, and skill attachments contained in the text.",
+        examples=[{"name": "Python Engineer"}]
+    )
     work_locations: List[JobLocation] = Field(
         default=[],
         title="Work Locations",
@@ -157,10 +162,10 @@ class Job(DataPoint):
         description="Core professional skill tags required for the job",
         examples=[{"name": "Python"}]
     )
-    job_type: List[JobTypeEnum] = Field(
+    job_type: List[str] = Field(
         default=[],
         title="Job Type",
-        description="job types include Internship, Full-time, Part-time, Contract, Temporary, Per Diem, Other.",
+        description="job types include Internship, Full-time, Part-time, Contract, Temporary, Per Diem, Seasonal, Other.",
         examples=["Full-time"]
     )
     # education: List[JobEducation] = Field(

@@ -1,11 +1,13 @@
 import os
 from typing import Type
+
 from pydantic import BaseModel
+
+from cognee.extensions.client.sprounix_api import SprounixApi
+from cognee.infrastructure.llm.config import get_llm_config
 from cognee.infrastructure.llm.get_llm_client import get_llm_client
 from cognee.infrastructure.llm.prompts import render_prompt
-from cognee.infrastructure.llm.config import get_llm_config
 from cognee.shared.logging_utils import get_logger
-
 
 logger = get_logger("cognee")
 
@@ -36,6 +38,7 @@ async def extract_content_graph(content: str, response_model: Type[BaseModel]):
             "title": True,
             "job_level": True,
             "job_type": True,
+            "job_function": {"name": True},
             "work_locations": {"__all__": {"name": True}},
             "skills": {"__all__": {"name": True}},
             "majors": {"__all__": {"name": True}},
@@ -46,5 +49,9 @@ async def extract_content_graph(content: str, response_model: Type[BaseModel]):
             "responsibilities": {"__all__": {"item": True}},
         }
     )
-    logger.info(f"content_graph_json: {content_graph_json}")
+    # logger.info(f"content_graph_json: {content_graph_json}")
+    try:
+        await SprounixApi.job_extract_result_store(content_graph_json, timeout=5)
+    except Exception as e:
+        logger.error(f"call sprounix api failed! error: {str(e)}")
     return content_graph
