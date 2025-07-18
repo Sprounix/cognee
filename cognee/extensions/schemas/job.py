@@ -50,6 +50,10 @@ class NameData(DataPoint):
     }
 
 
+class Company(NameData):
+    pass
+
+
 class JobSkill(NameData):
     pass
 

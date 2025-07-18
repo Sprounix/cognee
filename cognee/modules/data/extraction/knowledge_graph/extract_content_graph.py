@@ -3,7 +3,6 @@ from typing import Type
 
 from pydantic import BaseModel
 
-from cognee.extensions.client.sprounix_api import SprounixApi
 from cognee.infrastructure.llm.config import get_llm_config
 from cognee.infrastructure.llm.get_llm_client import get_llm_client
 from cognee.infrastructure.llm.prompts import render_prompt
@@ -49,9 +48,5 @@ async def extract_content_graph(content: str, response_model: Type[BaseModel]):
             "responsibilities": {"__all__": {"item": True}},
         }
     )
-    # logger.info(f"content_graph_json: {content_graph_json}")
-    try:
-        await SprounixApi.job_extract_result_store(content_graph_json, timeout=5)
-    except Exception as e:
-        logger.error(f"call sprounix api failed! error: {str(e)}")
+    logger.info(f"content_graph_json: {content_graph_json}")
     return content_graph

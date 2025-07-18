@@ -6,6 +6,10 @@ from pydantic import BaseModel
 
 from cognee.extensions.tasks.match_jobs import get_match_jobs
 from cognee.modules.users.exceptions.exceptions import PermissionDeniedError
+from cognee.shared.logging_utils import get_logger
+
+
+logger = get_logger("job")
 
 
 class RecommendJobPayloadDTO(BaseModel):
@@ -21,6 +25,7 @@ def get_recall_router() -> APIRouter:
     async def recommend_job(payload: RecommendJobPayloadDTO):
         """recommend job"""
         try:
+            logger.info(f"recommend_job payload: {payload.model_dump()}")
             jobs = await get_match_jobs(
                 payload.desired_position,
                 payload.resume

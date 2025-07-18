@@ -25,6 +25,7 @@ async def get_jobs(job_ids) -> List[Dict]:
     cypher = f"""MATCH (job:Job)
     WHERE job.id in {job_ids}""" + """
     
+    OPTIONAL MATCH (job)-[:job_function]->(func:JobFunction)
     OPTIONAL MATCH (job)-[:work_locations]->(loc:JobLocation)
     OPTIONAL MATCH (job)-[:skills]->(skill:JobSkill)
     OPTIONAL MATCH (job)-[:qualification]->(qua: Qualification)-[:required]->(reqItem:QualificationItem)
@@ -34,6 +35,7 @@ async def get_jobs(job_ids) -> List[Dict]:
     
     WITH 
       job,
+      COLLECT(DISTINCT {id: func.id, name: func.name}) AS job_function,
       COLLECT(DISTINCT {id: loc.id, name: loc.name}) AS work_locations,
       COLLECT(DISTINCT {id: skill.id, name: skill.name}) AS skills,
       COLLECT(DISTINCT {id: reqItem.id, category: reqItem.category, item: reqItem.item}) AS required,
@@ -44,6 +46,7 @@ async def get_jobs(job_ids) -> List[Dict]:
     RETURN {
       id: job.id,
       title: job.title,
+      job_function: job_function,
       job_level: job.job_level,  
       work_locations: work_locations,
       skills: skills,

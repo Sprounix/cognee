@@ -214,7 +214,7 @@ app.include_router(
 )
 
 
-def start_api_server(host: str = "0.0.0.0", port: int = 8000):
+def start_api_server(host: str = "0.0.0.0", port: int = 9876):
     """
     Start the API server using uvicorn.
     Parameters:
@@ -235,5 +235,5 @@ if __name__ == "__main__":
     logger = setup_logging()
 
     start_api_server(
-        host=os.getenv("HTTP_API_HOST", "0.0.0.0"), port=int(os.getenv("HTTP_API_PORT", 8000))
+        host=os.getenv("HTTP_API_HOST", "0.0.0.0"), port=int(os.getenv("HTTP_API_PORT", 9876))
     )

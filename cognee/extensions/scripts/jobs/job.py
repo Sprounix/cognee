@@ -21,7 +21,9 @@ async def add_and_cognify_from_csv(file_path, prune=False, limit=(0, 10)):
         await clearn_all_data()
     with open(file_path, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
-        jobs = [{key: value for key, value in row.items() if key in ["new_id", "title", "description"]} for row in reader]
+        jobs = [{key: value for key, value in row.items() if key in [
+            "job_function", "new_id", "title", "description", "job_type", "job_level"
+        ]} for row in reader]
     if not jobs:
         print("not exist jobs")
         return
@@ -31,6 +33,10 @@ async def add_and_cognify_from_csv(file_path, prune=False, limit=(0, 10)):
         if not job_id:
             continue
         job["id"] = job_id
+        if job.get("job_function") and job.get("job_function").lower() == "other":
+            job.pop("job_function", None)
+        if job.get("job_level") and job.get("job_level").lower() == "not applicable":
+            job.pop("job_level", None)
         job_str = json.dumps(job, ensure_ascii=False)
         try:
             start_time = time.time()
@@ -53,5 +59,5 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(__file__)
     csv_file = os.path.join(base_dir, "../../data", "jobs1000_new.csv")
     asyncio.run(
-        add_and_cognify_from_csv(csv_file, prune=True, limit=(50, 55))
+        add_and_cognify_from_csv(csv_file, prune=True, limit=(0, 1))
     )
