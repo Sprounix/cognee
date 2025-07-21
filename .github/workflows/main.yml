@@ -1,0 +1,29 @@
+name: Prod Deployment EC2 Docker Compose
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  aws-ssm-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY_SECRET }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Send command to SSM
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids i-06e707447f4ef36d6 \
+            --parameters commands='[
+              "cd /home/ubuntu/cognee",
+              "sudo -u ubuntu git pull",
+              "sudo docker compose --env-file .env.prod -f docker-compose.prod.yaml up -d --build --remove-orphans"
+            ]' \
+            --comment "Pull latest changes and build Docker image" \
+            --region us-east-2
