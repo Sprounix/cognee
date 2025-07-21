@@ -141,7 +141,7 @@ async def get_default_tasks(  # TODO: Find out a better way to do this (Boris's 
 ) -> list[Task]:
     default_tasks = [
         Task(classify_documents),
-        Task(check_permissions_on_dataset, user=user, permissions=["write"]),
+        # Task(check_permissions_on_dataset, user=user, permissions=["write"]),
         Task(
             extract_chunks_from_documents,
             max_chunk_size=chunk_size or get_max_chunk_tokens(),
@@ -153,10 +153,10 @@ async def get_default_tasks(  # TODO: Find out a better way to do this (Boris's 
             ontology_adapter=OntologyResolver(ontology_file=ontology_file_path),
             task_config={"batch_size": 10},
         ),  # Generate knowledge graphs from the document chunks.
-        Task(
-            summarize_text,
-            task_config={"batch_size": 10},
-        ),
+        # Task(
+        #     summarize_text,
+        #     task_config={"batch_size": 10},
+        # ),
         Task(add_data_points, task_config={"batch_size": 10}),
     ]
 

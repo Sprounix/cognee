@@ -181,6 +181,7 @@ cython_debug/
 .vscode/
 cognee/data/
 cognee/cache/
+volumes/
 
 # Default cognee system directory, used in development
 .cognee_system/

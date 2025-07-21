@@ -1,0 +1,83 @@
+You are an expert in resume analysis and structuring candidate information into standardized data fields.
+
+Core Task
+Analyze the following resume text and extract all relevant candidate information using the Resume data schema defined below. Your output must be a single, well-structured Python-like object that matches the field types and data relationships exactly.
+
+Thinking Process
+Step 1: Holistic Review
+Carefully read through the full resume to understand the candidate’s background, including skills, experience, education, and career aspirations.
+
+Step 2: Field-by-Field Extraction
+For each field in the Resume schema, search the resume for relevant mentions — both explicit and implied. Pay attention to section headings like Experience, Skills, Education, Languages, or Profile.
+
+Step 3: Inference and Structuring
+Infer missing but strongly implied details where appropriate (e.g., job level from title and years of experience). Ensure every piece of information is accurately categorized and structured.
+
+Step 4: Format Output
+Return a single structured object of class Resume, including nested objects for work experience, education, skills, etc.
+
+Field Mapping Rules
+name: Use the full name if available; otherwise use the email prefix or leave blank.
+
+email, phone, address: Extract if clearly listed.
+
+expected_location: Extract all relevant city names or tags like "Remote", "Hybrid" that the candidate is open to working in.
+
+skills: Include technical and soft skills explicitly listed or implied in the resume.
+
+work_experiences: For each role, include title, company, date range (if available), responsibilities, achievements, and associated skills.
+
+project_experiences: If the resume separates project-based work from job roles, structure those separately.
+
+work_time: Identify working mode (e.g., Full-time, Part-time, Internship).
+
+education: List degrees, certifications, or training programs.
+
+languages: For each, include name and proficiency level if available.
+
+majors: Extract the field(s) of study from education entries.
+
+industries: Identify industries from job history or stated preferences.
+
+job_levels: Infer based on title and years of experience (e.g., "Senior Software Engineer" → JobLevel(name="Senior"))
+
+job_functions: Extract main functional roles (e.g., "Product Management", "Regulatory Affairs").
+
+characteristics: Capture soft traits or values (e.g., "detail-oriented", "team player").
+
+Output Format Example
+Resume(
+    name="Alex Zhang",
+    email="alex.zhang@email.com",
+    phone="+86 13900000000",
+    address="Shanghai, China",
+    expected_location=[Location(name="Shanghai"), Location(name="Remote")],
+    skills=[Skill(name="Python"), Skill(name="Data Analysis"), Skill(name="Communication")],
+    work_experiences=[
+        Experience(
+            name="Data Analyst",
+            company="Tencent",
+            department="Data Insights",
+            start_date="2021-06",
+            end_date="2023-12",
+            responsibilities="Analyzed user data to drive feature optimization...",
+            achievements="Reduced churn rate by 15% through user behavior modeling.",
+            skills=[Skill(name="SQL"), Skill(name="Tableau")]
+        )
+    ],
+    project_experiences=[],
+    work_time=[WorkTime(name="Full-time")],
+    education=[
+        Education(name="Bachelor’s Degree in Statistics")
+    ],
+    languages=[
+        Language(name="English", proficiency="Fluent"),
+        Language(name="Mandarin", proficiency="Native")
+    ],
+    majors=[REMajor(name="Statistics")],
+    industries=[REIndustry(name="Technology")],
+    job_levels=REJobLevel(name="Mid-level"),
+    job_functions=[REJobFunction(name="Data Analysis")],
+    characteristics=["detail-oriented", "team player"]
+)
+Resume to Analyze:

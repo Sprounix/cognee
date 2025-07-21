@@ -1,0 +1,80 @@
+services:
+  neo4j:
+    image: neo4j:5.26.0
+    restart: unless-stopped
+    volumes:
+        - ${NEO4J_HOME:-./volumes/neo4j/logs}:/logs
+        - ${NEO4J_HOME:-./volumes/neo4j/config}:/var/lib/neo4j/conf
+        - ${NEO4J_HOME:-./volumes/neo4j/data}:/data
+        - ${NEO4J_HOME:-./volumes/neo4j/plugins}:/plugins
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/q9YEbIIeT%13
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_server_memory_heap_initial__size=1G
+      - NEO4J_server_memory_heap_max__size=4G
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,gds.*
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+    networks:
+      - cognee-network
+
+  pgvector:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cognee
+      POSTGRES_PASSWORD: cognee
+
+      POSTGRES_DB: cognee_db
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - ${PGDATA_HOST_VOLUME:-./volumes/db/data}:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - cognee-network
+
+  cognee:
+    container_name: cognee
+    restart: always
+    networks:
+      - cognee-network
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - neo4j
+      - pgvector
+    volumes:
+      - ./cognee:/app/cognee
+      - .env:/app/.env
+      - ./data:/app/data
+    environment:
+      - DEBUG=false # Change to true if debugging
+      - HOST=0.0.0.0
+      - ENVIRONMENT=local
+      - LOG_LEVEL=ERROR
+    extra_hosts:
+      # Allows the container to reach your local machine using "host.docker.internal" instead of "localhost"
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: "8GB"
+
+networks:
+  cognee-network:
+    name: cognee-network
+    external: true
+
+volumes:
+  chromadb_data:
+  postgres_data:
