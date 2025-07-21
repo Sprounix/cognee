@@ -9,7 +9,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./cognee:/app/cognee
-      - .env.beta:/app/.env
+      - .env.prod:/app/.env
     environment:
       - DEBUG=false # Change to true if debugging
       - HOST=0.0.0.0
