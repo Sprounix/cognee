@@ -22,35 +22,35 @@ async def get_job_skill_ids(job_ids) -> List[Dict]:
 
 
 async def get_jobs(job_ids) -> List[Dict]:
-    cypher = f"""MATCH (job:Job)
+    cypher = f"""
+    MATCH (job:Job)
     WHERE job.id in {job_ids}""" + """
     
     OPTIONAL MATCH (job)-[:job_function]->(func:JobFunction)
     OPTIONAL MATCH (job)-[:work_locations]->(loc:JobLocation)
     OPTIONAL MATCH (job)-[:skills]->(skill:JobSkill)
-    OPTIONAL MATCH (job)-[:qualification]->(qua: Qualification)-[:required]->(reqItem:QualificationItem)
-    OPTIONAL MATCH (job)-[:qualification]->(qua: Qualification)-[:preferred]->(prefItem:QualificationItem)
+    OPTIONAL MATCH (job)-[:qualification]->(:Qualification)-[:required]->(reqItem:QualificationItem)
+    OPTIONAL MATCH (job)-[:qualification]->(:Qualification)-[:preferred]->(prefItem:QualificationItem)
     OPTIONAL MATCH (job)-[:responsibilities]->(resp:ResponsibilityItem)
-    OPTIONAL MATCH (job)-[:majors]->(major:JobMajor) WHERE (major.name IS NOT NULL) 
+    OPTIONAL MATCH (job)-[:majors]->(major:JobMajor)
     
-    WITH 
-      job,
-      COLLECT(DISTINCT {id: func.id, name: func.name}) AS job_function,
-      COLLECT(DISTINCT {id: loc.id, name: loc.name}) AS work_locations,
-      COLLECT(DISTINCT {id: skill.id, name: skill.name}) AS skills,
-      COLLECT(DISTINCT {id: reqItem.id, category: reqItem.category, item: reqItem.item}) AS required,
-      COLLECT(DISTINCT {id: prefItem.id, category: prefItem.category, item: prefItem.item}) AS preferred,
-      COLLECT(DISTINCT {id: resp.id, item: resp.item}) AS responsibilities,
-      COLLECT(DISTINCT {id: major.id, name: major.name}) AS majors
+    WITH job,
+         COLLECT(DISTINCT CASE WHEN func.id IS NOT NULL THEN {id: func.id, name: func.name} END) AS funcs,
+         COLLECT(DISTINCT CASE WHEN loc.id IS NOT NULL THEN {id: loc.id, name: loc.name} END) AS locs,
+         COLLECT(DISTINCT CASE WHEN skill.id IS NOT NULL THEN {id: skill.id, name: skill.name} END) AS skills,
+         COLLECT(DISTINCT CASE WHEN reqItem.id IS NOT NULL THEN {id: reqItem.id, category: reqItem.category, item: reqItem.item} END) AS required,
+         COLLECT(DISTINCT CASE WHEN prefItem.id IS NOT NULL THEN {id: prefItem.id, category: prefItem.category, item: prefItem.item} END) AS preferred,
+         COLLECT(DISTINCT CASE WHEN resp.id IS NOT NULL THEN {id: resp.id, item: resp.item} END) AS responsibilities,
+         COLLECT(DISTINCT CASE WHEN major.id IS NOT NULL THEN {id: major.id, name: major.name} END) AS majors
 
     RETURN {
       id: job.id,
       title: job.title,
-      job_function: job_function,
-      job_level: job.job_level,  
-      work_locations: work_locations,
+      job_function: funcs,
+      job_level: job.job_level,
+      work_locations: locs,
       skills: skills,
-      job_type: job.job_type, 
+      job_type: job.job_type,
       majors: majors,
       qualification: {
         required: required,

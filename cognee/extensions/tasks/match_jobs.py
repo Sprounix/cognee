@@ -66,12 +66,13 @@ async def get_match_jobs(desired_position: Dict, resume: Dict) -> List[Dict]:
     # jobs = [job for job in jobs if get_job_level_code(job["job_level"]) == job_level_code]
 
     jobs = []
-    for job_id, detail in recall_job_dict:
+    for job_id, detail in recall_job_dict.items():
         skill = detail.get("skill") or {}
         skill_score = skill.get("score") or 0.8
         detail["reason"] = [f"matched {int(skill_score * 100)}% skill."]
         job = dict(job_id=job_id, score=skill_score, detail=detail)
         jobs.append(job)
+    logger.info(f"jobs: {jobs}")
     return jobs
 
 
