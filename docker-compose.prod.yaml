@@ -10,6 +10,7 @@ services:
     volumes:
       - ./cognee:/app/cognee
       - ./logs:/app/logs
+      - ./data:/app/data
       - .env:/app/.env
     environment:
       - DEBUG=false # Change to true if debugging
