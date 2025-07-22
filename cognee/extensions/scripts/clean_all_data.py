@@ -7,7 +7,7 @@ async def clearn_all_data():
     # nest_asyncio.apply()
     print("Deleting all files and data...")
     await cognee.prune.prune_data()
-    await cognee.prune.prune_system(metadata=True)
+    await cognee.prune.prune_system(metadata=False)
     print("All files deleted.")
 
 

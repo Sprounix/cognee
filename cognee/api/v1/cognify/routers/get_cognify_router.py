@@ -57,22 +57,29 @@ def get_cognify_router() -> APIRouter:
             )
 
         from cognee.api.v1.add import add as cognee_add
-
-        job_id = payload.job["id"]
-        job_str = json.dumps(payload.job, ensure_ascii=False)
-
-        dataset_name = f"{job_id}"
-        add_result = await cognee_add(job_str, dataset_name=dataset_name, node_set=["job"])
-        logger.info(f"add result: {add_result}")
-
         from cognee.api.v1.cognify import cognify as cognee_cognify
+
         try:
+            job_id = payload.job["id"]
+
+            logger.info(f"job_id start: {job_id}")
+
+            reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level"]
+            job = {key: value for key, value in payload.job.items() if key in reserve_list}
+            job_str = json.dumps(job, ensure_ascii=False)
+
+            dataset_name = f"{job_id}"
+            add_run = await cognee_add(job_str, dataset_name=dataset_name, node_set=["job"])
+            logger.info(f"add_run result: {add_run}")
+
             cognify_run = await cognee_cognify(
                 dataset_name, None, Job, chunker=TextChunker, run_in_background=payload.run_in_background
             )
+            logger.info(f"cognify_run result: {cognify_run}")
             return cognify_run
         except Exception as error:
-            return JSONResponse(status_code=409, content={"error": str(error)})
+            raise error
+            # return JSONResponse(status_code=409, content={"error": str(error)})
 
     @router.post("", response_model=dict)
     async def cognify(payload: CognifyPayloadDTO, user: User = Depends(get_authenticated_user)):
