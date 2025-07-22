@@ -9,7 +9,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./cognee:/app/cognee
-      - .logs:/app/logs
+      - ./logs:/app/logs
       - .env:/app/.env
     environment:
       - DEBUG=false # Change to true if debugging
