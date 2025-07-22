@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import logging
 from uuid import UUID
 from pydantic import BaseModel
 from typing import List, Optional
@@ -30,7 +31,8 @@ from cognee.extensions.schemas.job import Job
 from cognee.extensions.chunking.TextChunker import TextChunker
 
 
-logger = get_logger("api.cognify")
+logger = get_logger("cognify")
+
 
 
 class CognifyPayloadDTO(InDTO):
@@ -59,8 +61,11 @@ def get_cognify_router() -> APIRouter:
         from cognee.api.v1.add import add as cognee_add
         from cognee.api.v1.cognify import cognify as cognee_cognify
 
+        job_id = payload.job.get("id")
+
         try:
-            job_id = payload.job["id"]
+            if not job_id:
+                raise ValueError("job_id required")
 
             logger.info(f"job_id start: {job_id}")
 
@@ -83,8 +88,9 @@ def get_cognify_router() -> APIRouter:
             logger.info(f"cognify_run result: {cognify_run}")
             return cognify_run
         except Exception as error:
-            raise error
-            # return JSONResponse(status_code=409, content={"error": str(error)})
+            logger.error(f"job_id: {job_id} error: {str(error)}")
+            logging.exception(error)
+            return JSONResponse(status_code=409, content={"error": str(error)})
 
     @router.post("", response_model=dict)
     async def cognify(payload: CognifyPayloadDTO, user: User = Depends(get_authenticated_user)):
