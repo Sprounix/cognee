@@ -1,7 +1,7 @@
 import dlt
 import json
 import inspect
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import Union, BinaryIO, Any, List, Optional
 import cognee.modules.ingestion as ingestion
 from cognee.infrastructure.databases.relational import get_relational_engine
@@ -31,7 +31,8 @@ async def ingest_data(
         user = await get_default_user()
 
     pipeline = dlt.pipeline(
-        pipeline_name="metadata_extraction_pipeline",
+        # pipeline_name="metadata_extraction_pipeline",
+        pipeline_name=f"{uuid4().hex}",
         destination=destination,
     )
 
