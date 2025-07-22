@@ -57,6 +57,7 @@ class Neo4jAdapter(GraphDBInterface):
             auth=auth,
             max_connection_lifetime=120,
             notifications_min_severity="OFF",
+            max_connection_pool_size=100
         )
 
     async def initialize(self) -> None:

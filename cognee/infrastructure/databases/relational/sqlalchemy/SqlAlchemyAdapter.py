@@ -29,7 +29,15 @@ class SQLAlchemyAdapter:
         self.db_path: str = None
         self.db_uri: str = connection_string
 
-        self.engine = create_async_engine(connection_string)
+        self.engine = create_async_engine(
+            connection_string,
+            pool_size=5,  # number of connections to keep open
+            max_overflow=50,  # number of connections to allow beyond pool_size
+            pool_timeout=30.0,  # seconds to wait before giving up on getting a connection
+            pool_recycle=3600,  # seconds after which a connection is recycled
+            pool_pre_ping=True,  # enable connection health checks
+            pool_use_lifo=True  # use last-in-first-out for connection return
+        )
         self.sessionmaker = async_sessionmaker(bind=self.engine, expire_on_commit=False)
 
         if self.engine.dialect.name == "sqlite":
