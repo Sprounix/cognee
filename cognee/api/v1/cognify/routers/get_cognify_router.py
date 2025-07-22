@@ -66,6 +66,11 @@ def get_cognify_router() -> APIRouter:
 
             reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level"]
             job = {key: value for key, value in payload.job.items() if key in reserve_list}
+
+            if job.get("job_function") and job.get("job_function").lower() == "other":
+                job.pop("job_function", None)
+            if job.get("job_level") and job.get("job_level").lower() == "not applicable":
+                job.pop("job_level", None)
             job_str = json.dumps(job, ensure_ascii=False)
 
             dataset_name = f"{job_id}"

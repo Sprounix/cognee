@@ -475,7 +475,7 @@ class SQLAlchemyAdapter:
                         # Load the schema information into the MetaData object
                         await connection.run_sync(metadata.reflect, schema=schema_name)
                         for table in metadata.sorted_tables:
-                            logger.info(table.name)
+                            logger.info(f"DROP TABLE: {table.name}")
                             drop_table_query = text(
                                 f'DROP TABLE IF EXISTS {schema_name}."{table.name}" CASCADE'
                             )
