@@ -1,20 +1,19 @@
 import os
-from os import path
-from cognee.shared.logging_utils import get_logger
-from uuid import UUID
-from typing import Optional
-from typing import AsyncGenerator, List
 from contextlib import asynccontextmanager
+from os import path
+from typing import AsyncGenerator, List
+from typing import Optional
+from uuid import UUID
+
 from sqlalchemy import text, select, MetaData, Table, delete, inspect
-from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import joinedload
 
 from cognee.infrastructure.databases.exceptions import EntityNotFoundError
 from cognee.modules.data.models.Data import Data
-
+from cognee.shared.logging_utils import get_logger
 from ..ModelBase import Base
-
 
 logger = get_logger()
 
@@ -420,7 +419,12 @@ class SQLAlchemyAdapter:
         """
         async with self.engine.begin() as connection:
             result = await connection.execute(text(query))
-            return [dict(row) for row in result]
+            return [dict(row) for row in result.mappings()]
+
+    async def execute(self, query):
+        async with self.engine.begin() as connection:
+            result = await connection.execute(text(query))
+            return result
 
     async def drop_tables(self):
         """
