@@ -36,9 +36,9 @@ async def delete_job_data(job_id):
     data_ids = [row['data_id'] for row in dataset_data]  # Access tuple by index
 
     # 3. 删除 dataset_data、data 表中对应记录
-    await pg_db.execute_query(f"DELETE FROM dataset_data WHERE dataset_id = '{dataset_id}'")
+    await pg_db.execute(f"DELETE FROM dataset_data WHERE dataset_id = '{dataset_id}'")
     for data_id in data_ids:
-        await pg_db.execute_query(f"DELETE FROM data WHERE id = '{data_id}'")
+        await pg_db.execute(f"DELETE FROM data WHERE id = '{data_id}'")
 
     # 4. Neo4j 相关节点和关系删除
     # 通过 data_id 查找 TextDocument 节点
@@ -52,11 +52,10 @@ async def delete_job_data(job_id):
             continue
         text_doc_id = docs[0]["id"]
 
-        # 查找所有相关节点（DocumentChunk, TextSummary, InternationalExchangeProgram, Language, Institution, Subject）
         # 递归查找所有下游节点
         cypher = """
         MATCH (doc:TextDocument {id: $doc_id})
-        OPTIONAL MATCH (doc)-[*0..3]-(n)
+        OPTIONAL MATCH (doc)-[*0..4]-(n)
         RETURN n.type, n.id
         """
         result = await graph_db.query(cypher, {"doc_id": text_doc_id})
@@ -79,43 +78,43 @@ async def delete_job_data(job_id):
             node_id = item['n.id']
 
             if table == "Job":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "Job_title" WHERE id = '{node_id}'"""
                 )
             if table == "JobSkill":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "JobSkill_name" WHERE id = '{node_id}'"""
                 )
             if table == "JobMajor":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "JobMajor_name" WHERE id = '{node_id}'"""
                 )
             if table == "JobLocation":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "JobLocation_name" WHERE id = '{node_id}'"""
                 )
             if table == "JobFunction":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "JobFunction_name" WHERE id = '{node_id}'"""
                 )
             if table == "QualificationItem":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "QualificationItem_item" WHERE id = '{node_id}'"""
                 )
             if table == "ResponsibilityItem":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "ResponsibilityItem_item" WHERE id = '{node_id}'"""
                 )
             if table == "DocumentChunk":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "DocumentChunk_text" WHERE id = '{node_id}'"""
                 )
             if table == "TextDocument":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "TextDocument_name" WHERE id = '{node_id}'"""
                 )
             if table == "TextSummary":
-                await pg_db.execute_query(
+                await pg_db.execute(
                     f"""DELETE FROM "TextSummary" WHERE id = '{node_id}'"""
                 )
 
@@ -127,12 +126,12 @@ async def delete_job_data(job_id):
         # 7. 删除 graph_relationship_ledger 相关边记录
         # 通过 node_ids 删除相关边
         ids_str = ",".join([f"'{nid}'" for nid in node_ids])
-        await pg_db.execute_query(
+        await pg_db.execute(
             f"DELETE FROM graph_relationship_ledger WHERE source_node_id IN ({ids_str}) OR destination_node_id IN ({ids_str})"
         )
 
     # 8. 删除 datasets 表中的记录
-    await pg_db.execute_query(
+    await pg_db.execute(
         f"""DELETE FROM datasets WHERE id = '{dataset_id}'"""
     )
 
@@ -141,5 +140,6 @@ async def delete_job_data(job_id):
 
 if __name__ == "__main__":
     asyncio.run(
-        delete_job_data("c43f9992-f0b3-4506-943d-4582694b143f")
+        # delete_job_data("c43f9992-f0b3-4506-943d-4582694b143f")
+        clearn_all_data()
     )
