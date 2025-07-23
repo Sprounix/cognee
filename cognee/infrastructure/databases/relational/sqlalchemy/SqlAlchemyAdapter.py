@@ -420,7 +420,9 @@ class SQLAlchemyAdapter:
         """
         async with self.engine.begin() as connection:
             result = await connection.execute(text(query))
-            return [dict(row) for row in result]
+            if not result:
+                return result
+            return [dict(row) for row in result.mappings()]
 
     async def drop_tables(self):
         """
