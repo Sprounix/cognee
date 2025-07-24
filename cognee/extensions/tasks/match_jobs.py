@@ -56,9 +56,11 @@ async def get_match_jobs(desired_position: Dict, resume: Dict) -> List[Dict]:
                 job_dict[job_id] = {}
             job_dict[job_id]["title"] = job_title_score_result
 
-    logger.info(f"job_dict: {job_dict}")
-    recall_job_dict = {k: v for k, v in job_dict.items() if len(v.keys()) > 1}
-    recall_job_ids = list(recall_job_dict.keys())
+    # logger.info(f"job_dict: {job_dict}")
+    # recall_job_dict = {k: v for k, v in job_dict.items() if len(v.keys()) > 1}
+    recall_job_dict = dict(sorted(job_dict.items(), key=lambda x: len(x[1].keys()), reverse=True))
+
+    # recall_job_ids = list(recall_job_dict.keys())
 
     # jobs = await get_jobs(recall_job_ids)
     # if not jobs:
