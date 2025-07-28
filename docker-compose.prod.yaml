@@ -15,7 +15,7 @@ services:
     environment:
       - DEBUG=false # Change to true if debugging
       - HOST=0.0.0.0
-      - ENVIRONMENT=local
+      - ENVIRONMENT=production
       - LOG_LEVEL=ERROR
     extra_hosts:
       # Allows the container to reach your local machine using "host.docker.internal" instead of "localhost"
