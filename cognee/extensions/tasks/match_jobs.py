@@ -1,5 +1,6 @@
 from typing import Dict, List
 
+from cognee.api.v1.recall.routers.get_recall_router import RecommendJobPayloadDTO
 from cognee.extensions.tasks.recall_job import resume_skill_recall_job_ids, resume_job_titles_recall_job_ids
 from cognee.shared.logging_utils import get_logger
 
@@ -27,7 +28,11 @@ def get_job_level_code(job_level):
     return 0
 
 
-async def get_match_jobs(desired_position: Dict, resume: Dict) -> List[Dict]:
+async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
+    desired_position = payload.desired_position
+    resume = payload.resume
+    app_user_id = payload.app_user_id
+
     locations = desired_position.get("city") or []
     positions = desired_position.get("positions") or []
     industries = desired_position.get("industries") or []
@@ -43,18 +48,20 @@ async def get_match_jobs(desired_position: Dict, resume: Dict) -> List[Dict]:
 
     job_dict = {}
     if skills:
-        job_skill_score_results = await resume_skill_recall_job_ids(skills, top_k=1000)
+        job_skill_score_results = await resume_skill_recall_job_ids(skills, top_k=200)
         for job_skill_score_result in job_skill_score_results:
             job_id = job_skill_score_result["job_id"]
             job_dict[job_id] = {}
             job_dict[job_id]["skill"] = job_skill_score_result
+        logger.info(f"{app_user_id} skill recall finish")
     if positions:
-        job_title_score_results = await resume_job_titles_recall_job_ids(positions, top_k=1000)
+        job_title_score_results = await resume_job_titles_recall_job_ids(positions, top_k=500)
         for job_title_score_result in job_title_score_results:
             job_id = str(job_title_score_result["job_id"])
             if job_id not in job_dict:
                 job_dict[job_id] = {}
             job_dict[job_id]["title"] = job_title_score_result
+        logger.info(f"{app_user_id} job title recall finish")
 
     # logger.info(f"job_dict: {job_dict}")
     # recall_job_dict = {k: v for k, v in job_dict.items() if len(v.keys()) > 1}
@@ -81,13 +88,15 @@ async def get_match_jobs(desired_position: Dict, resume: Dict) -> List[Dict]:
 if __name__ == '__main__':
     import asyncio
 
-    desired_position = {
+    r = RecommendJobPayloadDTO()
+    r.desired_position = {
         "positions": ["Customer Service"]
     }
-    resume = {
+    r.resume = {
         "skills": ['Word Processing', 'Microsoft Office Suites', 'Type 55 WPM', 'Spreadsheet', 'Patient Accounting System', 'Database'],
     }
+    r.app_user_id = "test"
     results = asyncio.run(
-        get_match_jobs(desired_position, resume)
+        get_match_jobs(r)
     )
     print(results)

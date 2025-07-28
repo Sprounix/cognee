@@ -59,5 +59,5 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(__file__)
     csv_file = os.path.join(base_dir, "../../data", "jobs1000_new.csv")
     asyncio.run(
-        add_and_cognify_from_csv(csv_file, prune=True, limit=(0, 1))
+        add_and_cognify_from_csv(csv_file, prune=False, limit=(0, 1))
     )
