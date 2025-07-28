@@ -1,21 +1,12 @@
-from typing import Optional
-
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
 from cognee.extensions.tasks.match_jobs import get_match_jobs
 from cognee.modules.users.exceptions.exceptions import PermissionDeniedError
 from cognee.shared.logging_utils import get_logger
-
+from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
 
 logger = get_logger("job")
-
-
-class RecommendJobPayloadDTO(BaseModel):
-    app_user_id: Optional[str] = None
-    desired_position: Optional[dict] = None
-    resume: Optional[dict] = None
 
 
 def get_recall_router() -> APIRouter:
