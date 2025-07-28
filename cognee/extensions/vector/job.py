@@ -2,6 +2,7 @@ import asyncio
 from typing import List, Optional
 
 from cognee.infrastructure.databases.vector import get_vector_engine
+from cognee.infrastructure.databases.vector.embeddings import get_embedding_engine
 from cognee.infrastructure.databases.vector.exceptions import CollectionNotFoundError
 from cognee.infrastructure.databases.vector.models.ScoredResult import ScoredResult
 
@@ -28,13 +29,16 @@ async def vector_search(collection_name: str,
 
 async def get_job_skill_distance_results(skill_tags, top_k=500, distance_threshold=0.25):
     try:
+        embedding_engine = get_embedding_engine()
+        skill_tag_embeddings = await embedding_engine.embed_text(skill_tags)
+
         results = await asyncio.gather(
             *[vector_search(
                 "JobSkill_name",
-                query_text=skill,
+                query_vector=skill_vector,
                 top_k=top_k,
                 distance_threshold=distance_threshold
-            ) for skill in skill_tags]
+            ) for skill_vector in skill_tag_embeddings]
         )
         return [item for sublist in results for item in sublist]
     except Exception as e:
@@ -44,13 +48,16 @@ async def get_job_skill_distance_results(skill_tags, top_k=500, distance_thresho
 
 async def get_job_title_distance_results(job_titles, top_k=500, distance_threshold=0.4):
     try:
+        embedding_engine = get_embedding_engine()
+        job_title_embeddings = await embedding_engine.embed_text(job_titles)
+
         results = await asyncio.gather(
             *[vector_search(
                 "Job_title",
-                query_text=job_title,
+                query_vector=job_title_vector,
                 top_k=top_k,
                 distance_threshold=distance_threshold
-            ) for job_title in job_titles]
+            ) for job_title_vector in job_title_embeddings]
         )
         return [item for sublist in results for item in sublist]
     except Exception as e:

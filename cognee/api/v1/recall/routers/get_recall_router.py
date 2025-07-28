@@ -26,10 +26,7 @@ def get_recall_router() -> APIRouter:
         """recommend job"""
         try:
             logger.info(f"recommend_job payload: {payload.model_dump()}")
-            jobs = await get_match_jobs(
-                payload.desired_position,
-                payload.resume
-            )
+            jobs = await get_match_jobs(payload)
             return jobs
         except PermissionDeniedError:
             return []

@@ -8,7 +8,6 @@ async def resume_skill_recall_job_ids(skill_tags: List[str], top_k=500) -> List[
     if not skill_tags:
         return []
     scored_results = await get_job_skill_distance_results(skill_tags, top_k=top_k)
-    print("scored_results:", scored_results)
     recall_skill_ids = [str(item.id) for item in scored_results]
     if not recall_skill_ids:
         return []
