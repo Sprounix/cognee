@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from cognee.api.v1.recall.routers.get_recall_router import RecommendJobPayloadDTO
+from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
 from cognee.extensions.tasks.recall_job import resume_skill_recall_job_ids, resume_job_titles_recall_job_ids
 from cognee.shared.logging_utils import get_logger
 
