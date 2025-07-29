@@ -42,5 +42,5 @@ if [ "$ENVIRONMENT" = "dev" ] || [ "$ENVIRONMENT" = "local" ]; then
         gunicorn -w 1 -k uvicorn.workers.UvicornWorker -t 300 --bind=0.0.0.0:8000 --log-level debug --reload cognee.api.client:app
     fi
 else
-    gunicorn -w 4 -k uvicorn.workers.UvicornWorker -t 300 --bind=0.0.0.0:8000 --log-level error cognee.api.client:app
+    gunicorn -w 16 -k uvicorn.workers.UvicornWorker -t 300 --bind=0.0.0.0:8000 --log-level error cognee.api.client:app
 fi
