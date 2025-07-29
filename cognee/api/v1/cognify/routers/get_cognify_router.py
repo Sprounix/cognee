@@ -86,12 +86,12 @@ def get_cognify_router() -> APIRouter:
 
             dataset_name = f"{job_id}"
             add_run = await cognee_add(job_str, dataset_name=dataset_name, node_set=["job"])
-            logger.info(f"add_run result: {add_run}")
+            logger.info(f"job_id:{job_id} add_run result: {add_run}")
 
             cognify_run = await cognee_cognify(
                 dataset_name, None, Job, chunker=TextChunker, run_in_background=payload.run_in_background
             )
-            logger.info(f"cognify_run result: {cognify_run}")
+            logger.info(f"job_id:{job_id} cognify_run result: {cognify_run}")
             return cognify_run
         except Exception as error:
             logger.error(f"job_id: {job_id} error: {str(error)}")
