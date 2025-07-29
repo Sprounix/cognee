@@ -151,7 +151,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         match_results.append(job)
 
     logger.info(f"app_user_id:{app_user_id} match jobs total: {len(match_results)}")
-    return jobs
+    return match_results
 
 
 if __name__ == '__main__':
