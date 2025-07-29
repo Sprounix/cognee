@@ -73,13 +73,15 @@ def get_cognify_router() -> APIRouter:
             # exist deleted to add
             await delete_job_data(job_id)
 
-            reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level"]
+            reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level", "location"]
             job = {key: value for key, value in payload.job.items() if key in reserve_list}
 
             if job.get("job_function") and job.get("job_function").lower() == "other":
                 job.pop("job_function", None)
             if job.get("job_level") and job.get("job_level").lower() == "not applicable":
                 job.pop("job_level", None)
+            if not job.get("location"):
+                job.pop("location", None)
             job_str = json.dumps(job, ensure_ascii=False)
 
             dataset_name = f"{job_id}"
