@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -22,6 +23,7 @@ def get_recall_router() -> APIRouter:
         except PermissionDeniedError:
             return []
         except Exception as error:
+            logging.exception(error)
             return JSONResponse(status_code=409, content={"error": str(error)})
 
     return router
