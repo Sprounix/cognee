@@ -62,7 +62,7 @@ def calc_work_year_score(jd_work_years, resume_work_years):
     diff_high_dict = {0: 1, 1: 1, 2: 0.95, 3: 0.8, 4: 0.7, 5: 0.1, 6: 0.1}
     epi = 0.00001
     low = jd_work_years['low']
-    high = jd_work_years['high']
+    high = jd_work_years['high'] or -1
     diff_low = low - resume_work_years
     diff_high = resume_work_years - high
     if diff_low > 0:
