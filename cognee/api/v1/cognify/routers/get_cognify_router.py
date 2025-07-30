@@ -63,17 +63,18 @@ def get_cognify_router() -> APIRouter:
         from cognee.api.v1.cognify import cognify as cognee_cognify
 
         job_id = payload.job.get("id")
+        source_job_id = payload.job.get("job_id")
 
         try:
             if not job_id:
                 raise ValueError("job_id required")
 
-            logger.info(f"job_id start: {job_id}")
+            logger.info(f"job_id start: {job_id} source_job_id: {source_job_id}")
 
             # exist deleted to add
             await delete_job_data(job_id)
 
-            reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level", "location"]
+            reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level", "location", "job_id"]
             job = {key: value for key, value in payload.job.items() if key in reserve_list}
 
             if job.get("job_function") and job.get("job_function").lower() == "other":
@@ -82,6 +83,7 @@ def get_cognify_router() -> APIRouter:
                 job.pop("job_level", None)
             if not job.get("location"):
                 job.pop("location", None)
+            job["source"] = job.pop("job_id") or ""
             job_str = json.dumps(job, ensure_ascii=False)
 
             dataset_name = f"{job_id}"

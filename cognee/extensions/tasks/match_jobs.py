@@ -4,6 +4,7 @@ from typing import Dict, List
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
 from cognee.extensions.cypher.job import get_jobs
 from cognee.extensions.tasks.recall_job import resume_skill_recall_job_ids, resume_job_titles_recall_job_ids
+from cognee.extensions.utils.extract import extract_experience_years
 from cognee.shared.logging_utils import get_logger
 
 logger = get_logger("match_job")
@@ -78,6 +79,45 @@ def calc_work_year_score(jd_work_years, resume_work_years):
     return 1
 
 
+def calc_job_level(job_level_code, user_job_level_code):
+    if job_level_code == user_job_level_code:
+        return 1
+    elif user_job_level_code == 3 and user_job_level_code > job_level_code:
+        return 0.6
+    elif user_job_level_code <= 1 and job_level_code == 3:
+        return 0.6
+    elif job_level_code > user_job_level_code:
+        return 1
+    return 0.8
+
+
+def get_job_work_years(job):
+    if not job:
+        return
+    qualification = job.get("qualification") or {}
+    if not qualification:
+        return
+    work_year_list = []
+    for col in ["required", "preferred"]:
+        item_list = qualification.get(col) or []
+        if not item_list:
+            continue
+        items = [
+            i.get("item") for i in item_list if
+            i.get("category") and i.get("category") == "Experience" and i.get("item")
+        ]
+        for item in items:
+            e_result = extract_experience_years(item)
+            if not e_result:
+                continue
+            work_year_list.append(e_result)
+    if not work_year_list:
+        return
+    # 获取最大的工作年限
+    work_year_list = sorted(work_year_list, key=lambda x: x["low"], reverse=True)
+    return work_year_list[0]
+
+
 async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     desired_position = payload.desired_position
     resume = payload.resume
@@ -90,11 +130,11 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     skills = resume.get("skills") or []
     work_experiences = resume.get("work_experiences") or []
     educations = resume.get("educations") or []
-    job_level = resume.get("job_level") or []
-    job_type = ""
+    # job_level = resume.get("job_level") or []
+    desired_job_type = desired_position.get("job_type")
 
     user_work_years = calc_resume_work_years(work_experiences)
-    user_job_level_code = get_job_level_code(job_level)
+
 
     job_dict = {}
     if skills:
@@ -128,23 +168,36 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         score_detail = job_dict.get(job_id)
         score = score_detail.get("score")
 
-        job_level = job.get("job_level")
-        if job_level and user_job_level_code:
-            job_level_code = get_job_level_code(job_level)
-            if user_job_level_code > job_level_code:
-                score = score - 0.5
+        # job_level = job.get("job_level")
+        # if job_level:
+        #     user_job_level_code = get_job_level_code(job_level)
+        #     job_level_code = get_job_level_code(job_level)
+        #     score_detail["level_score"] = calc_job_level(job_level_code, user_job_level_code)
+        #     score = score * score_detail["level_score"]
 
-        required_list = job.get("qualification", {}).get("required")
-        items = [
-            i.get("item") for i in required_list if i.get("category") and i.get("category") == "Experience" and i.get("item")
-        ]
-        job_work_years = 0
-        if user_work_years:
-            pass
-        work_locations = job.get("work_locations") or []
+        job_work_years = get_job_work_years(job)
+        if job_work_years:
+            score_detail["exp_score"] = calc_work_year_score(job_work_years, user_work_years)
+            score = score * score_detail["exp_score"]
+
+        score_detail["location_score"] = 1
+        if locations:
+            score_detail["location_score"] = 0
+            work_locations = job.get("work_locations") or []
+            work_location_name_list = [wl["name"] for wl in work_locations]
+            for desired_location in locations:
+                if desired_location in work_location_name_list:
+                    score_detail["location_score"] = 1
+                    break
+            if score_detail["location_score"] == 0:
+                score = score * 0.1
+
+        job_type = job.get("job_type")
+        if desired_job_type and desired_job_type != "Not sure yet" and desired_job_type != job_type:
+            score = score * 0.05
 
         skill = score_detail.get("skill") or {}
-        skill_score = skill.get("score") or 0.8
+        skill_score = skill.get("score") or 0.05
 
         score_detail["reason"] = [f"matched {int(skill_score * 100)}% skill."]
         job = dict(job_id=job_id, score=max(0.05, score), detail=score_detail)
