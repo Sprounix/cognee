@@ -166,8 +166,11 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         logger.info(f"app_user_id:{app_user_id} skill recall finish, total: {len(job_skill_score_results)}")
 
     for w in work_experiences:
-        if w.get("job"):
-            positions.append(w["job"])
+        if not w.get("job"):
+            continue
+        positions = w["job"].split("/")
+        for position in positions:
+            positions.append(position.strip())
 
     positions = list(set(positions))
     if positions:
@@ -281,10 +284,6 @@ if __name__ == '__main__':
                                                     'description': None, 'start_date': '2005-01-01',
                                                     'end_date': '2009-01-01', 'present': False}],
                 'work_experiences': [
-             {'id': '8d12f335-3fd8-466a-91b6-81f5fc2b7584', 'company_name': 'MoSeeker Inc.',
-              'department_name': 'moseeker.com', 'job': 'Team Lead/Product Manager',
-              'description': "I am one of the founding members of our startup company, and have different focus in\ndifferent times.\n\n2020 Present, Senior Product Manager\nResponsibility:\n1. Requirements analysis, define/design new product features and scope planning\n2. Create the product roadmap/competitor analysis\n3. Innovation/new product opportunities exploration\n4. Work cross functionally with marketing, selling and supporting the products\n\n2019 Present, Team lead for Data Platform\nResponsibility:\n1. Lead/build the offline data warehouse platform, powering both internal BI system\nand products reporting system.\n2. Lead/build the real-time reporting project for website's user behavior tracking.\nTech Stack:\nHadoop 2(HDFS/YARN)/Hive/Spark/Apache Airflow\nKafka/Spark Streaming\nImpala/Tableau\n\n2016 Present, Senior Backend engineer/Tech Lead of FE&BE team\nResponsibility:\n1. Migrate backend tech stack from Python to Java\na. build the service discovering & RPC middleware framework\nb. microservice design and implementation\n2. Lead key projects for major product lines, just list some of them:\na. social referral system\nb. instant messaging\nC. highly customizable application form system\nd. notification system\n3. Build infrastructures\na. logging system\nb. alarm system\nTech Stack:\nPython(Tornado)\nJava(SpringBoot/SpringCloud;Thrift/Zookeeper)\nMySQL/Redis/Elasticsearch\nELK/Grafana\n\n2014-2015, Frontend engineer\nResponsibility:\nTech lead for frontend and focus on new feature design/dev, implemented features:\n1. Mobile responsive web design\n2. UI component library using AngularJS/ReactJS\n3. Frontend build and release pipeline\nTech Stack:\nAngularJS/React.JS/jQuery/SCSS/Gulp/CDN",
-              'start_date': '2014-01-01', 'end_date': None, 'present': True},
              {'id': 'ed09b716-f742-4238-ae61-c788956740f3', 'company_name': 'SAIC Motor',
               'department_name': 'chexiang.com', 'job': 'Web Developer/Frontend Developer',
               'description': 'Frontend Developer\nResponsibility: web page dev/UI component dev based on jQuery\nTech Stack: Jade/SCSS/jQuery/Gulp',
