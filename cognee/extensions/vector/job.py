@@ -5,6 +5,9 @@ from cognee.infrastructure.databases.vector import get_vector_engine
 from cognee.infrastructure.databases.vector.embeddings import get_embedding_engine
 from cognee.infrastructure.databases.vector.exceptions import CollectionNotFoundError
 from cognee.infrastructure.databases.vector.models.ScoredResult import ScoredResult
+from cognee.shared.logging_utils import get_logger
+
+logger = get_logger("job")
 
 
 async def vector_search(collection_name: str,
@@ -23,7 +26,7 @@ async def vector_search(collection_name: str,
     except CollectionNotFoundError:
         return []
     except Exception as e:
-        print("Failed to initialize vector engine: %s", e)
+        logger.error(f"Failed to initialize vector engine: {str(e)}")
         raise RuntimeError("Initialization error") from e
 
 
@@ -42,24 +45,62 @@ async def get_job_skill_distance_results(skill_tags, top_k=500, distance_thresho
         )
         return [item for sublist in results for item in sublist]
     except Exception as e:
-        print(f"Error during vector search: {e}")
+        logger.error(f"Error during vector search: {e}")
         return []
 
 
-async def get_job_title_distance_results(job_titles, top_k=500, distance_threshold=0.4):
+async def get_job_title_distance_results(texts, top_k=500, distance_threshold=0.4):
     try:
         embedding_engine = get_embedding_engine()
-        job_title_embeddings = await embedding_engine.embed_text(job_titles)
+        embeddings = await embedding_engine.embed_text(texts)
 
         results = await asyncio.gather(
             *[vector_search(
                 "Job_title",
-                query_vector=job_title_vector,
+                query_vector=query_vector,
                 top_k=top_k,
                 distance_threshold=distance_threshold
-            ) for job_title_vector in job_title_embeddings]
+            ) for query_vector in embeddings]
         )
         return [item for sublist in results for item in sublist]
     except Exception as e:
-        print(f"Error during vector search: {e}")
+        logger.error(f"Error during vector search: {e}")
+        return []
+
+
+async def get_job_function_distance_results(texts, top_k=500, distance_threshold=0.4):
+    try:
+        embedding_engine = get_embedding_engine()
+        embeddings = await embedding_engine.embed_text(texts)
+
+        results = await asyncio.gather(
+            *[vector_search(
+                "JobFunction_name",
+                query_vector=query_vector,
+                top_k=top_k,
+                distance_threshold=distance_threshold
+            ) for query_vector in embeddings]
+        )
+        return [item for sublist in results for item in sublist]
+    except Exception as e:
+        logger.error(f"Error during vector search: {e}")
+        return []
+
+
+async def get_responsibility_distance_results(texts, top_k=500, distance_threshold=0.6):
+    try:
+        embedding_engine = get_embedding_engine()
+        embeddings = await embedding_engine.embed_text(texts)
+
+        results = await asyncio.gather(
+            *[vector_search(
+                "ResponsibilityItem_item",
+                query_vector=query_vector,
+                top_k=top_k,
+                distance_threshold=distance_threshold
+            ) for query_vector in embeddings]
+        )
+        return [item for sublist in results for item in sublist]
+    except Exception as e:
+        logger.error(f"Error during vector search: {e}")
         return []

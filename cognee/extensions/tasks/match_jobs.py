@@ -3,8 +3,13 @@ from typing import Dict, List
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
 from cognee.extensions.cypher.job import get_jobs
-from cognee.extensions.tasks.recall_job import resume_skill_recall_job_ids, resume_job_titles_recall_job_ids
-from cognee.extensions.utils.extract import extract_experience_years
+from cognee.extensions.tasks.recall_job import (
+    resume_skill_recall_job_ids,
+    resume_desired_positions_and_job_title_recall_job_ids,
+    resume_desired_positions_and_job_function_recall_job_ids,
+    resume_work_experiences_recall_job_ids
+)
+from cognee.extensions.utils.extract import extract_experience_years, split_sentences
 from cognee.shared.logging_utils import get_logger
 
 logger = get_logger("match_job")
@@ -118,6 +123,17 @@ def get_job_work_years(job):
     return work_year_list[0]
 
 
+def get_last_work_experience(work_experiences):
+    if not work_experiences:
+        return {}
+    experiences = [w for w in work_experiences if w.get("start_date")]
+    if not experiences:
+        return
+    experiences = sorted(experiences, key=lambda x: x["start_date"], reverse=True)
+    last_experience = experiences[0]
+    return last_experience
+
+
 async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     desired_position = payload.desired_position
     resume = payload.resume
@@ -135,9 +151,12 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
 
     user_work_years = calc_resume_work_years(work_experiences)
 
+    last_work_experience = get_last_work_experience(work_experiences)
+    last_work_experience_description = last_work_experience.get("description") or ""
 
     job_dict = {}
     if skills:
+        logger.info(f"app_user_id:{app_user_id} skills: {skills}")
         job_skill_score_results = await resume_skill_recall_job_ids(skills, top_k=200)
         for job_skill_score_result in job_skill_score_results:
             job_id = job_skill_score_result["job_id"]
@@ -145,16 +164,46 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             job_dict[job_id]["skill"] = job_skill_score_result
             job_dict[job_id]["score"] = job_skill_score_result.get("score") * 0.5
         logger.info(f"app_user_id:{app_user_id} skill recall finish, total: {len(job_skill_score_results)}")
+
+    for w in work_experiences:
+        if w.get("job"):
+            positions.append(w["job"])
+
+    positions = list(set(positions))
     if positions:
-        job_title_score_results = await resume_job_titles_recall_job_ids(positions, top_k=500)
+        logger.info(f"app_user_id:{app_user_id} positions: {positions}")
+        job_title_score_results = await resume_desired_positions_and_job_title_recall_job_ids(positions, top_k=200)
         for job_title_score_result in job_title_score_results:
             job_id = str(job_title_score_result["job_id"])
             if job_id not in job_dict:
                 job_dict[job_id] = {}
             score = job_dict[job_id].get("score") or 0
             job_dict[job_id]["title"] = job_title_score_result
-            job_dict[job_id]["score"] = score + (job_title_score_result.get("score") * 0.5)
+            job_dict[job_id]["score"] = score + (job_title_score_result.get("score") * 0.35)
         logger.info(f"app_user_id:{app_user_id} job title recall finish, total: {len(job_title_score_results)}")
+
+        job_function_score_results = await resume_desired_positions_and_job_function_recall_job_ids(positions, top_k=200)
+        for job_function_score_result in job_function_score_results:
+            job_id = str(job_function_score_result["job_id"])
+            if job_id not in job_dict:
+                job_dict[job_id] = {}
+            score = job_dict[job_id].get("score") or 0
+            job_dict[job_id]["function"] = job_function_score_result
+            job_dict[job_id]["score"] = score + (job_function_score_result.get("score") * 0.15)
+        logger.info(f"app_user_id:{app_user_id} job function recall finish, total: {len(job_function_score_results)}")
+    if last_work_experience_description:
+        last_work_experience_contents = split_sentences(last_work_experience_description)
+        logger.info(f"app_user_id:{app_user_id} last_work_experience_contents: {last_work_experience_contents}")
+        experience_score_results = await resume_work_experiences_recall_job_ids(last_work_experience_contents, top_k=200)
+        for experience_score_result in experience_score_results:
+            job_id = str(experience_score_result["job_id"])
+            if job_id not in job_dict:
+                job_dict[job_id] = {}
+            score = job_dict[job_id].get("score") or 0
+            job_dict[job_id]["experience"] = experience_score_result
+            job_dict[job_id]["score"] = score + (experience_score_result.get("score") * 0.15)
+        logger.info(f"app_user_id:{app_user_id} experience recall finish, total: {len(experience_score_results)}")
+
     logger.info(f"app_user_id:{app_user_id} recall jobs total: {len(job_dict)}")
 
     recall_job_ids = list(job_dict.keys())
@@ -210,14 +259,45 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
 if __name__ == '__main__':
     import asyncio
 
-    r = RecommendJobPayloadDTO()
-    r.desired_position = {
-        "positions": ["Customer Service"]
-    }
-    r.resume = {
-        "skills": ['Word Processing', 'Microsoft Office Suites', 'Type 55 WPM', 'Spreadsheet', 'Patient Accounting System', 'Database'],
-    }
-    r.app_user_id = "test"
+    d = {'app_user_id': 'c525dc05-3bbe-446e-84bf-ab0fdbd5e75a',
+     'desired_position': {'id': 'c89daf3b-08dc-4f11-bb7f-6676eafa0aa9',
+                          'app_user_id': 'c525dc05-3bbe-446e-84bf-ab0fdbd5e75a', 'city': [],
+                          'positions': ['Custom Service'], 'industries': [], 'salary': None,
+                          'select_positions': ['946f0f96-0d83-4251-bc39-f54e0e0431e1'], 'job_status': None,
+                          'job_type': None, 'created_at': '2025-07-24T07:54:11.332186Z',
+                          'updated_at': '2025-07-29T07:26:45.017036Z'},
+     'resume': {'id': '3980a7a9-0784-42f6-954e-a7362f607b04',
+                'app_user_id': 'c525dc05-3bbe-446e-84bf-ab0fdbd5e75a',
+                'skills': ['Word Processing', 'Microsoft Office Suites', 'Type 55 WPM', 'Spreadsheet',
+                           'Patient Accounting System', 'Database'], 'others': '',
+                'educations': [{'id': '59fd6686-2651-47b2-8d4d-92545e82e82a',
+                                'college_name': 'The Hong Kong University of Science and Technology (HKUST)',
+                                'degree': 'Master of Engineering', 'major_name': 'Mechanical Engineering',
+                                'description': None, 'start_date': '2009-01-01', 'end_date': '2011-01-01',
+                                'present': False}, {'id': '1135c3d7-5f22-4306-918c-233935c016a7',
+                                                    'college_name': 'Shanghai Jiao Tong University (SJTU)',
+                                                    'degree': 'Bachelor of Engineering',
+                                                    'major_name': 'Mechanical Engineering Mechatronics',
+                                                    'description': None, 'start_date': '2005-01-01',
+                                                    'end_date': '2009-01-01', 'present': False}],
+                'work_experiences': [
+             {'id': '8d12f335-3fd8-466a-91b6-81f5fc2b7584', 'company_name': 'MoSeeker Inc.',
+              'department_name': 'moseeker.com', 'job': 'Team Lead/Product Manager',
+              'description': "I am one of the founding members of our startup company, and have different focus in\ndifferent times.\n\n2020 Present, Senior Product Manager\nResponsibility:\n1. Requirements analysis, define/design new product features and scope planning\n2. Create the product roadmap/competitor analysis\n3. Innovation/new product opportunities exploration\n4. Work cross functionally with marketing, selling and supporting the products\n\n2019 Present, Team lead for Data Platform\nResponsibility:\n1. Lead/build the offline data warehouse platform, powering both internal BI system\nand products reporting system.\n2. Lead/build the real-time reporting project for website's user behavior tracking.\nTech Stack:\nHadoop 2(HDFS/YARN)/Hive/Spark/Apache Airflow\nKafka/Spark Streaming\nImpala/Tableau\n\n2016 Present, Senior Backend engineer/Tech Lead of FE&BE team\nResponsibility:\n1. Migrate backend tech stack from Python to Java\na. build the service discovering & RPC middleware framework\nb. microservice design and implementation\n2. Lead key projects for major product lines, just list some of them:\na. social referral system\nb. instant messaging\nC. highly customizable application form system\nd. notification system\n3. Build infrastructures\na. logging system\nb. alarm system\nTech Stack:\nPython(Tornado)\nJava(SpringBoot/SpringCloud;Thrift/Zookeeper)\nMySQL/Redis/Elasticsearch\nELK/Grafana\n\n2014-2015, Frontend engineer\nResponsibility:\nTech lead for frontend and focus on new feature design/dev, implemented features:\n1. Mobile responsive web design\n2. UI component library using AngularJS/ReactJS\n3. Frontend build and release pipeline\nTech Stack:\nAngularJS/React.JS/jQuery/SCSS/Gulp/CDN",
+              'start_date': '2014-01-01', 'end_date': None, 'present': True},
+             {'id': 'ed09b716-f742-4238-ae61-c788956740f3', 'company_name': 'SAIC Motor',
+              'department_name': 'chexiang.com', 'job': 'Web Developer/Frontend Developer',
+              'description': 'Frontend Developer\nResponsibility: web page dev/UI component dev based on jQuery\nTech Stack: Jade/SCSS/jQuery/Gulp',
+              'start_date': '2012-01-01', 'end_date': '2014-01-01', 'present': False},
+             {'id': '48a6632b-f5db-460a-acc4-df5e87c43685', 'company_name': 'Siemens China',
+              'department_name': 'Industry Sector', 'job': 'Management Trainee/Tech Support Engineer',
+              'description': 'A member of MC20 trainee program. Joined the Shanghai Crane team afterwards as a\ntech support engineer, providing technical consulting for BD partners.',
+              'start_date': '2011-01-01', 'end_date': '2012-01-01', 'present': False}],
+                'project_experiences': []
+                }
+         }
+
+    r = RecommendJobPayloadDTO(**d)
     results = asyncio.run(
         get_match_jobs(r)
     )

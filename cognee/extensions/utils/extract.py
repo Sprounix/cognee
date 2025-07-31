@@ -1,6 +1,9 @@
 import re
 from typing import Dict, Optional
 
+def split_sentences(text):
+    return [s.strip() for s in re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?|\!)\s', text) if s.strip()]
+
 
 def extract_experience_years(text: str) -> Optional[Dict[str, Optional[int]]]:
     number_dict = {

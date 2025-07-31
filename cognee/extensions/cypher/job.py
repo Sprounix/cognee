@@ -10,13 +10,31 @@ async def query(cypher):
 
 
 async def get_job_ids_by_skills(skill_ids) -> List[str]:
-    cypher = f"MATCH (Job:Job)-[r:skills]->(skill:JobSkill) WHERE skill.id IN {skill_ids} RETURN collect(DISTINCT Job.id) AS job_ids"
+    cypher = f"MATCH (job:Job)-[r:skills]->(skill:JobSkill) WHERE skill.id IN {skill_ids} RETURN collect(DISTINCT job.id) AS job_ids"
+    results = await query(cypher)
+    return results[0]["job_ids"] if results else []
+
+
+async def get_job_ids_by_job_function(job_function_ids) -> List[str]:
+    cypher = f"MATCH (job:Job)-[r:job_function]->(fun:JobFunction) WHERE fun.id IN {job_function_ids} RETURN collect(DISTINCT job.id) AS job_ids"
+    results = await query(cypher)
+    return results[0]["job_ids"] if results else []
+
+
+async def get_job_ids_by_responsibility(responsibility_ids) -> List[str]:
+    cypher = f"MATCH (job:Job)-[r:responsibilities]->(res:ResponsibilityItem) WHERE res.id IN {responsibility_ids} RETURN collect(DISTINCT job.id) AS job_ids"
     results = await query(cypher)
     return results[0]["job_ids"] if results else []
 
 
 async def get_job_skill_ids(job_ids) -> List[Dict]:
-    cypher = f"MATCH(Job:Job)-[r:skills]->(skill:JobSkill) WHERE Job.id IN {job_ids} RETURN collect(DISTINCT skill.id) AS skills, Job.id AS job_id"
+    cypher = f"MATCH(job:Job)-[r:skills]->(skill:JobSkill) WHERE job.id IN {job_ids} RETURN collect(DISTINCT skill.id) AS skills, job.id AS job_id"
+    results = await query(cypher)
+    return results
+
+
+async def get_job_responsibility_ids(job_ids) -> List[Dict]:
+    cypher = f"MATCH(job:Job)-[r:responsibilities]->(res:ResponsibilityItem) WHERE job.id IN {job_ids} RETURN collect(DISTINCT res.id) AS responsibility_ids, job.id AS job_id"
     results = await query(cypher)
     return results
 
