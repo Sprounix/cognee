@@ -1,7 +1,8 @@
 from typing import List, Dict
 
 from cognee.extensions.cypher.job import (
-    get_job_ids_by_skills, get_job_skill_ids, get_job_ids_by_job_function, get_job_responsibility_ids
+    get_job_ids_by_skills, get_job_skill_ids, get_job_ids_by_job_function, get_job_responsibility_ids,
+    get_job_ids_by_responsibility
 )
 from cognee.extensions.vector.job import (
     get_job_skill_distance_results, get_job_title_distance_results, get_job_function_distance_results,
@@ -60,8 +61,7 @@ async def resume_work_experiences_recall_job_ids(work_exp_descriptions: List[str
     if not scored_results:
         return []
     recall_responsibility_ids = [str(item.id) for item in scored_results]
-    job_ids = await get_responsibility_distance_results(recall_responsibility_ids)
-
+    job_ids = await get_job_ids_by_responsibility(recall_responsibility_ids)
     job_responsibility_ids = await get_job_responsibility_ids(job_ids)
     job_responsibility_dict = {
         jr["job_id"]: jr["responsibility_ids"] for jr in job_responsibility_ids if jr["responsibility_ids"]

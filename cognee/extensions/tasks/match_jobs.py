@@ -171,10 +171,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         split_positions = w["job"].split("/")
         for position in split_positions:
             positions.append(position.strip())
-
     positions = list(set(positions))
+    logger.info(f"app_user_id:{app_user_id} positions: {positions}")
     if positions:
-        logger.info(f"app_user_id:{app_user_id} positions: {positions}")
         job_title_score_results = await resume_desired_positions_and_job_title_recall_job_ids(positions, top_k=200)
         for job_title_score_result in job_title_score_results:
             job_id = str(job_title_score_result["job_id"])
@@ -194,6 +193,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             job_dict[job_id]["function"] = job_function_score_result
             job_dict[job_id]["score"] = score + (job_function_score_result.get("score") * 0.15)
         logger.info(f"app_user_id:{app_user_id} job function recall finish, total: {len(job_function_score_results)}")
+
     if last_work_experience_description:
         last_work_experience_contents = split_sentences(last_work_experience_description)
         logger.info(f"app_user_id:{app_user_id} last_work_experience_contents: {last_work_experience_contents}")
