@@ -53,10 +53,10 @@ async def resume_desired_positions_and_job_function_recall_job_ids(desired_posit
     return match_jobs[:top_k]
 
 
-async def resume_work_experiences_recall_job_ids(desired_positions: List[str], top_k=50) -> List[Dict]:
-    if not desired_positions:
+async def resume_work_experiences_recall_job_ids(work_exp_descriptions: List[str], top_k=50) -> List[Dict]:
+    if not work_exp_descriptions:
         return []
-    scored_results = await get_responsibility_distance_results(desired_positions)
+    scored_results = await get_responsibility_distance_results(work_exp_descriptions)
     if not scored_results:
         return []
     recall_responsibility_ids = [str(item.id) for item in scored_results]
