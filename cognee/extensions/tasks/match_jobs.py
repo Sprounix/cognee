@@ -228,6 +228,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         #     score = score * score_detail["level_score"]
 
         job_work_years = get_job_work_years(job)
+        logger.info(f"app_user_id:{app_user_id} job_work_years: {job_work_years} user_work_years:{user_work_years}")
         if job_work_years:
             score_detail["exp_score"] = calc_work_year_score(job_work_years, user_work_years)
             score = score * score_detail["exp_score"]
@@ -237,6 +238,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             score_detail["location_score"] = 0
             work_locations = job.get("work_locations") or []
             work_location_name_list = [wl["name"] for wl in work_locations]
+            logger.info(f"app_user_id:{app_user_id} locations: {locations} work_locations:{work_location_name_list}")
             for desired_location in locations:
                 if desired_location in work_location_name_list:
                     score_detail["location_score"] = 1
