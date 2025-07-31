@@ -168,8 +168,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     for w in work_experiences:
         if not w.get("job"):
             continue
-        positions = w["job"].split("/")
-        for position in positions:
+        split_positions = w["job"].split("/")
+        for position in split_positions:
             positions.append(position.strip())
 
     positions = list(set(positions))
