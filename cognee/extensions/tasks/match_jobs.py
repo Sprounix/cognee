@@ -1,4 +1,5 @@
 import datetime
+import time
 from typing import Dict, List
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
@@ -135,6 +136,7 @@ def get_last_work_experience(work_experiences):
 
 
 async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
+    start = time.perf_counter()
     desired_position = payload.desired_position
     resume = payload.resume
     app_user_id = payload.app_user_id
@@ -257,7 +259,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         job = dict(job_id=job_id, score=max(0.05, score), detail=score_detail)
         match_results.append(job)
 
-    logger.info(f"app_user_id:{app_user_id} match jobs total: {len(match_results)}")
+    elapsed = time.perf_counter() - start
+    logger.info(f"app_user_id:{app_user_id} match jobs total: {len(match_results)} elapsed: {elapsed:.6f}s")
     return match_results
 
 
