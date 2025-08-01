@@ -176,7 +176,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     desired_position = payload.desired_position
     resume = payload.resume
     app_user_id = payload.app_user_id
-    top_k = 200
+    top_k = 100
 
     locations = desired_position.get("city") or []
     positions = desired_position.get("positions") or []
