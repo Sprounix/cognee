@@ -263,6 +263,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         match_responsibility_items = await get_responsibility_items(matched_all_responsibility_ids)
         match_responsibility_dict = {res["id"]: res["item"] for res in match_responsibility_items}
 
+    logger.info(f"app_user_id:{app_user_id} {match_responsibility_dict}")
     logger.info(f"app_user_id:{app_user_id} get responsibility from graphdb total: {len(match_responsibility_dict)}")
 
     recall_job_ids = list(job_dict.keys())
