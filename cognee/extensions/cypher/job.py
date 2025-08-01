@@ -42,7 +42,8 @@ async def get_job_responsibility_ids(job_ids) -> List[Dict]:
 async def get_responsibility_items(responsibility_ids) -> List[str]:
     cypher = f"MATCH(r:ResponsibilityItem) WHERE r.id IN {responsibility_ids} RETURN r.item as item"
     results = await query(cypher)
-    return [r["item"] for r in results]
+    # [{"id": "", "item": ""}, ]
+    return [r["responsibilities"] for r in results]
 
 
 async def get_jobs(job_ids) -> List[Dict]:
