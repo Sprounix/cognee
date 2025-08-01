@@ -156,7 +156,7 @@ def calc_basic_score_by_weight(score_detail, weight_dict=None):
     return score
 
 
-def generate_reasons(score_detail, match_responsibility_dict):
+def generate_reasons(score_detail, job):
     reasons = []
     skill = score_detail.get("skill")
     if skill:
@@ -166,9 +166,11 @@ def generate_reasons(score_detail, match_responsibility_dict):
             reasons.append(f'Part skill matched.')
     experience = score_detail.get("experience")
     if experience:
+        job_responsibilities = job.get("responsibilities") or []
+        r_dict = {r["id"]: r["item"] for r in job_responsibilities}
         responsibility_ids = experience.get("responsibility_ids") or []
         for responsibility_id in responsibility_ids:
-            responsibility_item = match_responsibility_dict.get(responsibility_id)
+            responsibility_item = r_dict.get(responsibility_id)
             if not responsibility_item:
                 continue
             reasons.append(f'Responsibility matched: {responsibility_item}')
@@ -258,14 +260,6 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     logger.info(
         f"app_user_id:{app_user_id} matched all responsibility_ids total: {len(matched_all_responsibility_ids)}"
     )
-    match_responsibility_dict = {}
-    if matched_all_responsibility_ids:
-        match_responsibility_items = await get_responsibility_items(matched_all_responsibility_ids)
-        match_responsibility_dict = {res["id"]: res["item"] for res in match_responsibility_items}
-
-    logger.info(f"app_user_id:{app_user_id} {match_responsibility_dict}")
-    logger.info(f"app_user_id:{app_user_id} get responsibility from graphdb total: {len(match_responsibility_dict)}")
-
     recall_job_ids = list(job_dict.keys())
     jobs = await get_jobs(recall_job_ids)
     logger.info(f"app_user_id:{app_user_id} get jobs from graphdb total: {len(jobs)}")
@@ -311,7 +305,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             # score = score * score_detail["job_type"]
 
         score_detail["score"] = score
-        score_detail["reason"] = generate_reasons(score_detail, match_responsibility_dict)
+        score_detail["reason"] = generate_reasons(score_detail, job)
         job = dict(job_id=job_id, score=max(0, score), detail=score_detail)
         match_results.append(job)
 
