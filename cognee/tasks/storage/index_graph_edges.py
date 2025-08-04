@@ -5,7 +5,7 @@ from cognee.infrastructure.databases.vector import get_vector_engine
 from cognee.infrastructure.databases.graph import get_graph_engine
 from cognee.modules.graph.models.EdgeType import EdgeType
 
-logger = get_logger(level=ERROR)
+logger = get_logger("graph")
 
 
 async def index_graph_edges(batch_size: int = 1024):
@@ -41,12 +41,16 @@ async def index_graph_edges(batch_size: int = 1024):
 
     _, edges_data = await graph_engine.get_graph_data()
 
+    logger.info(f"get_graph_data")
+
     edge_types = Counter(
         item.get("relationship_name")
         for edge in edges_data
         for item in edge
         if isinstance(item, dict) and "relationship_name" in item
     )
+
+    logger.info(f"get_graph_data edge_types: {len(edge_types)}")
 
     for text, count in edge_types.items():
         edge = EdgeType(relationship_name=text, number_of_edges=count)
@@ -66,11 +70,14 @@ async def index_graph_edges(batch_size: int = 1024):
             indexed_data_point.metadata["index_fields"] = [field_name]
             index_points[index_name].append(indexed_data_point)
 
+    logger.info(f"get_graph_data index_points")
     for index_key, points in index_points.items():
         index_name, field_name = index_key.split(".")
 
         for start in range(0, len(points), batch_size):
             batch = points[start : start + batch_size]
             await vector_engine.index_data_points(index_name, field_name, batch)
+
+    logger.info(f"get_graph_data vector_engine index_data_points")
 
     return None
