@@ -18,7 +18,7 @@ ENV DEBUG=${DEBUG}
 
 
 # if you located in China, you can use aliyun mirror to speed up
-RUN sed -i 's@deb.debian.org@mirrors.aliyun.com@g' /etc/apt/sources.list.d/debian.sources
+# RUN sed -i 's@deb.debian.org@mirrors.aliyun.com@g' /etc/apt/sources.list.d/debian.sources
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
