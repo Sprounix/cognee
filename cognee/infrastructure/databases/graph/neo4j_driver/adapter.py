@@ -879,6 +879,28 @@ class Neo4jAdapter(GraphDBInterface):
 
         return (nodes, edges)
 
+    async def get_relationship_type_counts(self):
+        """
+        Get counts of relationship types without scanning the entire graph.
+        This is much more efficient than get_graph_data() when only relationship counts are needed.
+
+        Returns:
+        --------
+
+            A dictionary mapping relationship types to their counts.
+        """
+        query = """
+        MATCH ()-[r]->()
+        RETURN TYPE(r) AS relationship_type, COUNT(r) AS count
+        """
+        
+        result = await self.query(query)
+        
+        return {
+            record["relationship_type"]: record["count"] 
+            for record in result
+        }
+
     async def get_nodeset_subgraph(
         self, node_type: Type[Any], node_name: List[str]
     ) -> Tuple[List[Tuple[int, dict]], List[Tuple[int, int, str, dict]]]:

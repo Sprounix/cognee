@@ -59,6 +59,7 @@ services:
       - HOST=0.0.0.0
       - ENVIRONMENT=local
       - LOG_LEVEL=ERROR
+      # - GRAPH_DATABASE_URL=bolt://neo4j:q9YEbIIeT%13@neo4j:7687
     extra_hosts:
       # Allows the container to reach your local machine using "host.docker.internal" instead of "localhost"
       - "host.docker.internal:host-gateway"
@@ -73,7 +74,7 @@ services:
 networks:
   cognee-network:
     name: cognee-network
-    external: true
+    # external: true
 
 volumes:
   chromadb_data:
