@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import logging
 from uuid import UUID
 from pydantic import BaseModel
 from typing import List, Optional
@@ -28,9 +29,11 @@ from cognee.shared.logging_utils import get_logger
 from typing import Dict
 from cognee.extensions.schemas.job import Job
 from cognee.extensions.chunking.TextChunker import TextChunker
+from cognee.extensions.scripts.clean_all_data import delete_job_data
 
 
-logger = get_logger("api.cognify")
+logger = get_logger("cognify")
+
 
 
 class CognifyPayloadDTO(InDTO):
@@ -57,21 +60,44 @@ def get_cognify_router() -> APIRouter:
             )
 
         from cognee.api.v1.add import add as cognee_add
-
-        job_id = payload.job["id"]
-        job_str = json.dumps(payload.job, ensure_ascii=False)
-
-        dataset_name = f"{job_id}"
-        add_result = await cognee_add(job_str, dataset_name=dataset_name, node_set=["job"])
-        logger.info(f"add result: {add_result}")
-
         from cognee.api.v1.cognify import cognify as cognee_cognify
+
+        job_id = payload.job.get("id")
+        source_job_id = payload.job.get("job_id")
+
         try:
+            if not job_id:
+                raise ValueError("job_id required")
+
+            logger.info(f"job_id start: {job_id} source_job_id: {source_job_id}")
+
+            # exist deleted to add
+            await delete_job_data(job_id)
+
+            reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level", "location", "job_id"]
+            job = {key: value for key, value in payload.job.items() if key in reserve_list}
+
+            if job.get("job_function") and job.get("job_function").lower() == "other":
+                job.pop("job_function", None)
+            if job.get("job_level") and job.get("job_level").lower() == "not applicable":
+                job.pop("job_level", None)
+            if not job.get("location"):
+                job.pop("location", None)
+            job["source"] = job.pop("job_id") or ""
+            job_str = json.dumps(job, ensure_ascii=False)
+
+            dataset_name = f"{job_id}"
+            add_run = await cognee_add(job_str, dataset_name=dataset_name, node_set=["job"])
+            logger.info(f"job_id:{job_id} add_run result: {add_run}")
+
             cognify_run = await cognee_cognify(
                 dataset_name, None, Job, chunker=TextChunker, run_in_background=payload.run_in_background
             )
+            logger.info(f"job_id:{job_id} cognify_run result: {cognify_run}")
             return cognify_run
         except Exception as error:
+            logger.error(f"job_id: {job_id} error: {str(error)}")
+            logging.exception(error)
             return JSONResponse(status_code=409, content={"error": str(error)})
 
     @router.post("", response_model=dict)

@@ -35,7 +35,7 @@ LOGS_DIR = Path(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__f
 LOGS_DIR.mkdir(exist_ok=True)  # Create logs dir if it doesn't exist
 
 # Maximum number of log files to keep
-MAX_LOG_FILES = 10
+MAX_LOG_FILES = 100
 
 # Version information
 PYTHON_VERSION = platform.python_version()

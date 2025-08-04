@@ -140,6 +140,7 @@ celerybeat.pid
 # Environments
 .env
 .env.local
+.env.prod
 .venv
 env/
 venv/
@@ -196,3 +197,4 @@ SWE-bench_testsample/
 
 # ChromaDB Data
 .chromadb_data/
+data/

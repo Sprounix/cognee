@@ -152,14 +152,8 @@ class Job(DataPoint):
         default=[],
         title="Work Locations",
         description='All specified work locations. Look for city/state names. Also, explicitly identify if the role is "Remote", "Hybrid", or "On-site".',
-        examples=[{"name": "United States"}, {"name": "Remote"},]
+        examples=[{"name": "New York, NY"}, {"name": "Remote"},]
     )
-    # work_years: List[str] = Field(
-    #     default=[],
-    #     title="Work Years",
-    #     description="The overall requirement for years of work experience for this job",
-    #     examples=["5+ years of experience"]
-    # )
     skills: List[JobSkill] = Field(
         default=[],
         title="Skill Tags",

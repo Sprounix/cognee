@@ -1,20 +1,19 @@
 import os
-from os import path
-from cognee.shared.logging_utils import get_logger
-from uuid import UUID
-from typing import Optional
-from typing import AsyncGenerator, List
 from contextlib import asynccontextmanager
+from os import path
+from typing import AsyncGenerator, List
+from typing import Optional
+from uuid import UUID
+
 from sqlalchemy import text, select, MetaData, Table, delete, inspect
-from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import joinedload
 
 from cognee.infrastructure.databases.exceptions import EntityNotFoundError
 from cognee.modules.data.models.Data import Data
-
+from cognee.shared.logging_utils import get_logger
 from ..ModelBase import Base
-
 
 logger = get_logger()
 
@@ -29,7 +28,15 @@ class SQLAlchemyAdapter:
         self.db_path: str = None
         self.db_uri: str = connection_string
 
-        self.engine = create_async_engine(connection_string)
+        self.engine = create_async_engine(
+            connection_string,
+            pool_size=5,  # number of connections to keep open
+            max_overflow=50,  # number of connections to allow beyond pool_size
+            pool_timeout=30.0,  # seconds to wait before giving up on getting a connection
+            pool_recycle=3600,  # seconds after which a connection is recycled
+            pool_pre_ping=True,  # enable connection health checks
+            pool_use_lifo=True  # use last-in-first-out for connection return
+        )
         self.sessionmaker = async_sessionmaker(bind=self.engine, expire_on_commit=False)
 
         if self.engine.dialect.name == "sqlite":
@@ -412,7 +419,12 @@ class SQLAlchemyAdapter:
         """
         async with self.engine.begin() as connection:
             result = await connection.execute(text(query))
-            return [dict(row) for row in result]
+            return [dict(row) for row in result.mappings()]
+
+    async def execute(self, query):
+        async with self.engine.begin() as connection:
+            result = await connection.execute(text(query))
+            return result
 
     async def drop_tables(self):
         """
@@ -467,6 +479,7 @@ class SQLAlchemyAdapter:
                         # Load the schema information into the MetaData object
                         await connection.run_sync(metadata.reflect, schema=schema_name)
                         for table in metadata.sorted_tables:
+                            logger.info(f"DROP TABLE: {table.name}")
                             drop_table_query = text(
                                 f'DROP TABLE IF EXISTS {schema_name}."{table.name}" CASCADE'
                             )

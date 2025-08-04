@@ -39,14 +39,11 @@ async def index_graph_edges(batch_size: int = 1024):
         logger.error("Failed to initialize engines: %s", e)
         raise RuntimeError("Initialization error") from e
 
-    _, edges_data = await graph_engine.get_graph_data()
+    # Use optimized method to get relationship counts instead of scanning entire graph
+    relationship_counts = await graph_engine.get_relationship_type_counts()
 
-    edge_types = Counter(
-        item.get("relationship_name")
-        for edge in edges_data
-        for item in edge
-        if isinstance(item, dict) and "relationship_name" in item
-    )
+    # relationship_counts is already a dict with counts, no need for Counter wrapper
+    edge_types = relationship_counts
 
     for text, count in edge_types.items():
         edge = EdgeType(relationship_name=text, number_of_edges=count)
