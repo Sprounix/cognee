@@ -21,6 +21,7 @@ from cognee.modules.data.methods import (
     get_authorized_existing_datasets,
     load_or_create_datasets,
     check_dataset_name,
+    get_datasets_by_name
 )
 
 from cognee.modules.pipelines.models.PipelineRunInfo import (
@@ -86,7 +87,8 @@ async def cognee_pipeline(
 
     # Get datasets user wants write permissions for (verify user has permissions if datasets are provided as well)
     # NOTE: If a user wants to write to a dataset he does not own it must be provided through UUID
-    existing_datasets = await get_authorized_existing_datasets(datasets, "write", user)
+    # existing_datasets = await get_authorized_existing_datasets(datasets, "write", user)
+    existing_datasets = await get_datasets_by_name(datasets, user.id)
 
     if not datasets:
         # Get datasets from database if none sent.
