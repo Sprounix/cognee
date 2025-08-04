@@ -19,7 +19,7 @@ async def add_data_points(data_points: List[DataPoint]) -> List[DataPoint]:
     added_edges = {}
     visited_properties = {}
 
-    logger.info("add_data_points total:", len(data_points))
+    logger.info(f"add_data_points total: {len(data_points)}")
 
     results = await asyncio.gather(
         *[
@@ -33,7 +33,7 @@ async def add_data_points(data_points: List[DataPoint]) -> List[DataPoint]:
         ]
     )
 
-    logger.info("add_data_points get_graph_from_model total:", len(results))
+    logger.info(f"add_data_points get_graph_from_model total: {len(results)}")
 
     for result_nodes, result_edges in results:
         nodes.extend(result_nodes)
