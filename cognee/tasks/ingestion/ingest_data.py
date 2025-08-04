@@ -32,7 +32,7 @@ async def ingest_data(
 
     pipeline = dlt.pipeline(
         # pipeline_name="metadata_extraction_pipeline",
-        pipeline_name=f"{uuid4().hex}",
+        pipeline_name=f"{dataset_name}",
         destination=destination,
     )
 
@@ -181,10 +181,10 @@ async def ingest_data(
 
                     await session.commit()
 
-        await give_permission_on_dataset(user, dataset.id, "read")
-        await give_permission_on_dataset(user, dataset.id, "write")
-        await give_permission_on_dataset(user, dataset.id, "delete")
-        await give_permission_on_dataset(user, dataset.id, "share")
+        # await give_permission_on_dataset(user, dataset.id, "read")
+        # await give_permission_on_dataset(user, dataset.id, "write")
+        # await give_permission_on_dataset(user, dataset.id, "delete")
+        # await give_permission_on_dataset(user, dataset.id, "share")
 
         return file_paths
 

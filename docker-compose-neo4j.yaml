@@ -1,0 +1,62 @@
+services:
+  neo4j:
+    image: neo4j:5.26.0
+    restart: unless-stopped
+    volumes:
+        - ${NEO4J_HOME:-./volumes/neo4j/logs}:/logs
+        - ${NEO4J_HOME:-./volumes/neo4j/config}:/var/lib/neo4j/conf
+        - ${NEO4J_HOME:-./volumes/neo4j/data}:/data
+        - ${NEO4J_HOME:-./volumes/neo4j/plugins}:/plugins
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/q9YEbIIeT%13
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_server_memory_heap_initial__size=4G
+      - NEO4J_server_memory_heap_max__size=4G
+      - NEO4J_dbms_memory_pagecache_size=8G
+      - NEO4J_dbms_memory_transaction_total_max=4G
+      - NEO4J_dbms_memory_transaction_max=1G
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,gds.*
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+    networks:
+      - cognee-network
+
+networks:
+  cognee-network:
+    name: cognee-network
+
+
+
+services:
+  neo4j:
+    image: neo4j:5.26.0
+    restart: unless-stopped
+    volumes:
+        - ${NEO4J_HOME:-./volumes/neo4j/logs}:/logs
+        - ${NEO4J_HOME:-./volumes/neo4j/config}:/var/lib/neo4j/conf
+        - ${NEO4J_HOME:-./volumes/neo4j/data}:/data
+        - ${NEO4J_HOME:-./volumes/neo4j/plugins}:/plugins
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/q9YEbIIeT%13
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_server_memory_heap_initial__size=4G
+      - NEO4J_server_memory_heap_max__size=4G
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*,gds.*
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+    networks:
+      - cognee-network
+
+networks:
+  cognee-network:
+    name: cognee-network

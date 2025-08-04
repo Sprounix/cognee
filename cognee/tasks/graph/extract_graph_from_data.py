@@ -13,6 +13,10 @@ from cognee.modules.graph.utils import (
 )
 from cognee.shared.data_models import KnowledgeGraph
 from cognee.tasks.storage import add_data_points
+from cognee.shared.logging_utils import get_logger
+
+
+logger = get_logger("graph")
 
 
 async def integrate_chunk_graphs(
@@ -23,6 +27,7 @@ async def integrate_chunk_graphs(
 ) -> List[DocumentChunk]:
     """Updates DocumentChunk objects, integrates data points and edges into databases."""
     graph_engine = await get_graph_engine()
+    logger.info("integrate_chunk_graphs start")
 
     if graph_model is not KnowledgeGraph:
         for chunk_index, chunk_graph in enumerate(chunk_graphs):
@@ -36,17 +41,23 @@ async def integrate_chunk_graphs(
         chunk_graphs,
         graph_engine,
     )
+    logger.info("integrate_chunk_graphs retrieve_existing_edges")
 
     graph_nodes, graph_edges = expand_with_nodes_and_edges(
         data_chunks, chunk_graphs, ontology_adapter, existing_edges_map
     )
 
+    logger.info("integrate_chunk_graphs expand_with_nodes_and_edges")
+
     if len(graph_nodes) > 0:
         await add_data_points(graph_nodes)
+
+    logger.info("integrate_chunk_graphs add_data_points")
 
     if len(graph_edges) > 0:
         await graph_engine.add_edges(graph_edges)
 
+    logger.info("integrate_chunk_graphs add_edges")
     return data_chunks
 
 
