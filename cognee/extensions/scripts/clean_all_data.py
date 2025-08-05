@@ -16,6 +16,12 @@ async def clearn_all_data():
     print("All files deleted.")
 
 
+async def exist_job_data(job_id):
+    pg_db = get_relational_engine()
+    datasets = await pg_db.execute_query(f"SELECT id FROM datasets WHERE name = '{job_id}'")
+    return True if datasets else False
+
+
 async def delete_job_data(job_id):
     pg_db = get_relational_engine()
     graph_db = await get_graph_engine()

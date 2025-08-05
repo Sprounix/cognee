@@ -29,7 +29,7 @@ from cognee.shared.logging_utils import get_logger
 from typing import Dict
 from cognee.extensions.schemas.job import Job
 from cognee.extensions.chunking.TextChunker import TextChunker
-from cognee.extensions.scripts.clean_all_data import delete_job_data
+from cognee.extensions.scripts.clean_all_data import delete_job_data, exist_job_data
 
 
 logger = get_logger("cognify")
@@ -72,8 +72,11 @@ def get_cognify_router() -> APIRouter:
             logger.info(f"job_id start: {job_id} source_job_id: {source_job_id}")
 
             # exist deleted to add
-            await delete_job_data(job_id)
-
+            # await delete_job_data(job_id)
+            exist = await exist_job_data(job_id)
+            if exist:
+                logger.info(f"job_id: {job_id} exist skip")
+                return
             reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level", "location", "job_id"]
             job = {key: value for key, value in payload.job.items() if key in reserve_list}
 
