@@ -184,7 +184,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     app_user_id = payload.app_user_id
     top_k = 100
 
-    locations = desired_position.get("city") or []
+    desired_locations = desired_position.get("city") or []
     positions = desired_position.get("positions") or []
     industries = desired_position.get("industries") or []
 
@@ -192,7 +192,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     work_experiences = resume.get("work_experiences") or []
     educations = resume.get("educations") or []
     # job_level = resume.get("job_level") or []
-    desired_job_type = desired_position.get("job_type")
+    desired_job_type_list = desired_position.get("job_type") or []
 
     user_work_years = calc_resume_work_years(work_experiences)
 
@@ -286,23 +286,15 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
 
         score = score_detail["b_score"]
-        score_detail["location_score"] = 1
-        if locations:
-            score_detail["location_score"] = 0
+        if desired_locations:
             work_locations = job.get("work_locations") or []
             work_location_name_list = [wl["name"] for wl in work_locations]
-            # logger.info(f"app_user_id:{app_user_id} locations: {locations} work_locations:{work_location_name_list}")
-            for desired_location in locations:
-                if desired_location in work_location_name_list:
-                    score_detail["location_score"] = 1
-                    break
-            # if score_detail["location_score"] == 0:
-            #     score = score * 0.1
+            if bool(set(desired_locations) & set(work_location_name_list)):
+                score_detail["location_score"] = 1
 
         job_type = job.get("job_type") or []
-        if desired_job_type and desired_job_type != "Not sure yet" and desired_job_type not in job_type:
-            score_detail["job_type_score"] = 0
-            # score = score * score_detail["job_type"]
+        if desired_job_type_list and bool(set(desired_job_type_list) & set(job_type)):
+            score_detail["job_type_score"] = 1
 
         score_detail["score"] = score
         score_detail["reason"] = generate_reasons(score_detail, job)
