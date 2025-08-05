@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 
 from cognee.extensions.cypher.job import get_jobs
 from cognee.modules.users.exceptions.exceptions import PermissionDeniedError
+from cognee.extensions.scripts.clean_all_data import delete_job_data
 
 
 class JobPayloadDTO(BaseModel):
@@ -24,6 +26,15 @@ def get_job_router() -> APIRouter:
             return jobs
         except PermissionDeniedError:
             return []
+        except Exception as error:
+            return JSONResponse(status_code=409, content={"error": str(error)})
+
+    @router.delete("/{job_id}", response_model=None)
+    async def delete_job(job_id: UUID):
+        if not job_id:
+            return JSONResponse(status_code=409, content={"error": "Invalid job_id"})
+        try:
+            await delete_job_data(job_id)
         except Exception as error:
             return JSONResponse(status_code=409, content={"error": str(error)})
 
