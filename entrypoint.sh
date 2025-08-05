@@ -34,6 +34,7 @@ echo "Starting server..."
 sleep 2
 
 CPU_CORES=$(nproc --all)
+WORKER_COUNT=$((CPU_CORES * 2 + 1))
 
 # Modified Gunicorn startup with error handling
 if [ "$ENVIRONMENT" = "dev" ] || [ "$ENVIRONMENT" = "local" ]; then
@@ -44,5 +45,5 @@ if [ "$ENVIRONMENT" = "dev" ] || [ "$ENVIRONMENT" = "local" ]; then
         gunicorn -w 1 -k uvicorn.workers.UvicornWorker -t 300 --bind=0.0.0.0:8000 --log-level debug --reload cognee.api.client:app
     fi
 else
-    gunicorn -w "$CPU_CORES" -k uvicorn.workers.UvicornWorker -t 300 --bind=0.0.0.0:8000 --log-level error cognee.api.client:app
+    gunicorn -w "$WORKER_COUNT" -k uvicorn.workers.UvicornWorker -t 300 --bind=0.0.0.0:8000 --log-level error cognee.api.client:app
 fi
