@@ -291,8 +291,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             work_location_name_list = [wl["name"] for wl in work_locations]
             if bool(set(desired_locations) & set(work_location_name_list)):
                 score_detail["location_score"] = 1
-            if score_detail.get("location_score") != 1:
-                score = 0
+                score = score + 1
         job_type = job.get("job_type") or []
         if desired_job_type_list and bool(set(desired_job_type_list) & set(job_type)):
             score_detail["job_type_score"] = 1
