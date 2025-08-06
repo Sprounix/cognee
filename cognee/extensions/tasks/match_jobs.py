@@ -182,7 +182,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     desired_position = payload.desired_position
     resume = payload.resume
     app_user_id = payload.app_user_id
-    top_k = 100
+    top_k = 300
 
     desired_locations = desired_position.get("city") or []
     positions = desired_position.get("positions") or []
@@ -291,10 +291,14 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             work_location_name_list = [wl["name"] for wl in work_locations]
             if bool(set(desired_locations) & set(work_location_name_list)):
                 score_detail["location_score"] = 1
-
+            if score_detail.get("location_score") != 1:
+                score = 0
         job_type = job.get("job_type") or []
         if desired_job_type_list and bool(set(desired_job_type_list) & set(job_type)):
             score_detail["job_type_score"] = 1
+
+        if score == 0:
+            continue
 
         score_detail["score"] = score
         score_detail["reason"] = generate_reasons(score_detail, job)
