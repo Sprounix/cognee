@@ -177,6 +177,24 @@ def generate_reasons(score_detail, job):
     return reasons
 
 
+def state_match(desired_locations, work_locations):
+    desired_location_state_list = []
+    work_location_state_list = []
+    for l in desired_locations:
+        states = l.split(",")
+        if len(states) > 1:
+            state = states[1].lower().strip()
+            desired_location_state_list.append(state)
+    for l in work_locations:
+        states = l.split(",")
+        if len(states) > 1:
+            state = states[1].lower().strip()
+            work_location_state_list.append(state)
+    if not desired_location_state_list and not work_location_state_list:
+        return True
+    return bool(set(desired_location_state_list) & set(work_location_state_list))
+
+
 async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     start = time.perf_counter()
     desired_position = payload.desired_position
@@ -292,6 +310,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             if bool(set(desired_locations) & set(work_location_name_list)):
                 score_detail["location_score"] = 1
                 score = score + 1
+            elif state_match(desired_locations, work_location_name_list):
+                score_detail["location_score"] = 0.7
+                score = score + 0.7
         job_type = job.get("job_type") or []
         if desired_job_type_list and bool(set(desired_job_type_list) & set(job_type)):
             score_detail["job_type_score"] = 1

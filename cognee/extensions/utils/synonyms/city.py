@@ -1,0 +1,180 @@
+CITY_SYNONYMS = {
+    "san angelo area": "San Angelo",
+    "greater grand junction area": "Grand Junction",
+    "greensboro--winston-salem--high point area": "Greensboro",
+    "des moines metropolitan area": "Des Moines",
+    "greater philadelphia": "Philadelphia",
+    "waco area": "Waco",
+    "las vegas metropolitan area": "Las Vegas",
+    "state college-dubois area": "State College",
+    "los angeles metropolitan area": "Los Angeles",
+    "san francisco bay area": "San Francisco",
+    "greater madison area": "Madison",
+    "buffalo-niagara falls area": "Buffalo",
+    "salt lake city metropolitan area": "Salt Lake City",
+    "cincinnati metropolitan area": "Cincinnati",
+    "greater pittsburgh region": "Pittsburgh",
+    "greater minneapolis-st. paul area": "Minneapolis",
+    "greater indianapolis": "Indianapolis",
+    "north port-sarasota area": "North Port",
+    "raleigh-durham-chapel hill area": "Raleigh",
+    "charlotte metro": "Charlotte",
+    "kansas city metropolitan area": "Kansas City",
+    "greater tampa bay area": "Tampa",
+    "miami-fort lauderdale area": "Miami",
+    "college station-bryan area": "College Station",
+    "greater bend area": "Bend",
+    "cape coral metropolitan area": "Cape Coral",
+    "greater lexington area": "Lexington",
+    "greater phoenix area": "Phoenix",
+    "washington dc-baltimore area": "Washington",
+    "spokane-coeur d'alene area": "Spokane",
+    "greater richmond region": "Richmond",
+    "dayton metropolitan area": "Dayton",
+    "nashville metropolitan area": "Nashville",
+    "maui": "Maui",
+    "greater houston": "Houston",
+    "bowling green metropolitan area": "Bowling Green",
+    "greater owensboro area": "Owensboro",
+    "atlanta metropolitan area": "Atlanta",
+    "greater hartford": "Hartford",
+    "greater st. louis": "St. Louis",
+    "new york city metropolitan area": "New York",
+    "erie-meadville area": "Erie",
+    "shreveport-bossier city area": "Shreveport",
+    "mobile metropolitan area": "Mobile",
+    "greater orlando": "Orlando",
+    "new bern-morehead city area": "New Bern",
+    "greater anchorage area": "Anchorage",
+    "denver metropolitan area": "Denver",
+    "pueblo-ca\u00f1on city area": "Pueblo",
+    "houma-thibodaux area": "Houma",
+    "louisville metropolitan area": "Louisville",
+    "greater reno area": "Reno",
+    "medford-grants pass area": "Medford",
+    "greater panama city area": "Panama City",
+    "grand rapids metropolitan area": "Grand Rapids",
+    "knoxville metropolitan area": "Knoxville",
+    "midland-odessa area": "Midland",
+    "omaha metropolitan area": "Omaha",
+    "tyler-jacksonville area": "Tyler",
+    "greater terre haute area": "Terre Haute",
+    "metropolitan fresno": "Fresno",
+    "little rock metropolitan area": "Little Rock",
+    "huntsville-decatur-albertville area": "Huntsville",
+    "detroit metropolitan area": "Detroit",
+    "johnstown-somerset area": "Johnstown",
+    "urbana-champaign area": "Champaign",
+    "gainesville metropolitan area": "Gainesville",
+    "greater savannah area": "Savannah",
+    "memphis metropolitan area": "Memphis",
+    "greater lansing": "Lansing",
+    "greater idaho falls": "Idaho Falls",
+    "greater sacramento": "Sacramento",
+    "greater asheville": "Asheville",
+    "greater seattle area": "Seattle",
+    "greater colorado springs area": "Colorado Springs",
+    "brownsville metropolitan area": "Brownsville",
+    "greater dothan": "Dothan",
+    "greater wilmington area": "Wilmington",
+    "greater cleveland": "Cleveland",
+    "greater bismarck area": "Bismarck",
+    "lawton area": "Lawton",
+    "greater tucson area": "Tucson",
+    "greater chicago area": "Chicago",
+    "dallas-fort worth metroplex": "Dallas",
+    "san diego metropolitan area": "San Diego",
+    "greater fairbanks area": "Fairbanks",
+    "greater fort collins area": "Fort Collins",
+    "greater syracuse-auburn area": "Syracuse",
+    "topeka metropolitan area": "Topeka",
+    "greater milwaukee": "Milwaukee",
+    "greater rockford area": "Rockford",
+    "greater morgantown area": "Morgantown",
+    "greater boston": "Boston",
+    "greater sioux falls area": "Sioux Falls"
+}
+
+
+US_STATE_ABBREV = {
+    "alabama": "AL",
+    "alaska": "AK",
+    "arizona": "AZ",
+    "arkansas": "AR",
+    "california": "CA",
+    "colorado": "CO",
+    "connecticut": "CT",
+    "delaware": "DE",
+    "florida": "FL",
+    "georgia": "GA",
+    "hawaii": "HI",
+    "idaho": "ID",
+    "illinois": "IL",
+    "indiana": "IN",
+    "iowa": "IA",
+    "kansas": "KS",
+    "kentucky": "KY",
+    "louisiana": "LA",
+    "maine": "ME",
+    "maryland": "MD",
+    "massachusetts": "MA",
+    "michigan": "MI",
+    "minnesota": "MN",
+    "mississippi": "MS",
+    "missouri": "MO",
+    "montana": "MT",
+    "nebraska": "NE",
+    "nevada": "NV",
+    "new hampshire": "NH",
+    "new jersey": "NJ",
+    "new mexico": "NM",
+    "new york": "NY",
+    "north carolina": "NC",
+    "north dakota": "ND",
+    "ohio": "OH",
+    "oklahoma": "OK",
+    "oregon": "OR",
+    "pennsylvania": "PA",
+    "rhode island": "RI",
+    "south carolina": "SC",
+    "south dakota": "SD",
+    "tennessee": "TN",
+    "texas": "TX",
+    "utah": "UT",
+    "vermont": "VT",
+    "virginia": "VA",
+    "washington": "WA",
+    "west virginia": "WV",
+    "wisconsin": "WI",
+    "wyoming": "WY",
+    "district of columbia": "DC",
+    "puerto rico": "PR",
+}
+
+
+def normalize_us_state(raw_name: str) -> str:
+    """
+    将 'United States [State Name]' 转换成州缩写
+    例如 'United States Rhode Island' → 'RI'
+    """
+    name = raw_name.strip().lower()
+    if name.startswith("united states"):
+        state_name = name.replace("united states", "").strip()
+        if not state_name:
+            return ""
+        return US_STATE_ABBREV.get(state_name, state_name.upper())
+    return raw_name
+
+
+def normalize_city_name(country: str, location: str) -> str:
+    key = location.strip().lower()
+    if key in CITY_SYNONYMS:
+        if not country:
+            return location
+        state = normalize_us_state(country)
+        if not state:
+            return location
+        city = CITY_SYNONYMS[key]
+        return f"{city}, {state}"
+    else:
+        return location
