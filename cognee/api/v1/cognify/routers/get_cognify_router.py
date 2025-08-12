@@ -76,7 +76,7 @@ def get_cognify_router() -> APIRouter:
             exist = await exist_job_data(job_id)
             if exist:
                 logger.info(f"job_id: {job_id} exist skip")
-                return
+                return {"id": job_id, "job_id": source_job_id}
             reserve_list = ["id", "job_function", "title", "description", "job_type", "job_level", "location", "job_id"]
             job = {key: value for key, value in payload.job.items() if key in reserve_list}
 
