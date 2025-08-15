@@ -41,13 +41,6 @@ async def delete_job_data(job_id):
         return
     data_ids = [row['data_id'] for row in dataset_data]  # Access tuple by index
 
-    # 3. 删除 dataset_data、data 表中对应记录
-    await pg_db.execute(f"DELETE FROM dataset_data WHERE dataset_id = '{dataset_id}'")
-    logger.info(f"Job {job_id} table[dataset_data] deleted.")
-    for data_id in data_ids:
-        await pg_db.execute(f"DELETE FROM data WHERE id = '{data_id}'")
-
-    logger.info(f"Job {job_id} table[data] deleted.")
     # 4. Neo4j 相关节点和关系删除
     # 通过 data_id 查找 TextDocument 节点
     for data_id in data_ids:
@@ -155,6 +148,13 @@ async def delete_job_data(job_id):
             f"DELETE FROM graph_relationship_ledger WHERE source_node_id IN ({ids_str}) OR destination_node_id IN ({ids_str})"
         )
         logger.info(f"Job {job_id} table[graph_relationship_ledger] ids_str: {ids_str} deleted.")
+
+        for data_id in data_ids:
+            await pg_db.execute(f"DELETE FROM data WHERE id = '{data_id}'")
+        logger.info(f"Job {job_id} table[data] deleted.")
+
+        await pg_db.execute(f"DELETE FROM dataset_data WHERE dataset_id = '{dataset_id}'")
+        logger.info(f"Job {job_id} table[dataset_data] deleted.")
 
     # 8. 删除 datasets 表中的记录
     await pg_db.execute(
