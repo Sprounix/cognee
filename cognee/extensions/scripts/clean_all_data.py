@@ -10,10 +10,10 @@ logger = get_logger("clean")
 
 async def clearn_all_data():
     # nest_asyncio.apply()
-    print("Deleting all files and data...")
+    logger.info("Deleting all files and data...")
     await cognee.prune.prune_data()
     await cognee.prune.prune_system(metadata=True)
-    print("All files deleted.")
+    logger.info("All files deleted.")
 
 
 async def exist_job_data(job_id):
@@ -28,10 +28,10 @@ async def delete_job_data(job_id):
     # 1. 查找 datasets 表中 name=program_id 的 dataset_id
     datasets = await pg_db.execute_query(f"SELECT id FROM datasets WHERE name = '{job_id}'")
     if not datasets:
+        logger.warning(f"Job {job_id} not exist datasets.")
         return
-
-    logger.info(f"Job {job_id} and related data delete start.")
     dataset_id = str(datasets[0]['id'])  # Access tuple by index
+    logger.info(f"Job {job_id} dataset_id:{dataset_id} and related data delete start.")
 
     # 2. 查找 dataset_data 表中 dataset_id 对应的 data_id
     dataset_data = await pg_db.execute_query(f"SELECT data_id FROM dataset_data WHERE dataset_id = '{dataset_id}'")
@@ -43,9 +43,11 @@ async def delete_job_data(job_id):
 
     # 3. 删除 dataset_data、data 表中对应记录
     await pg_db.execute(f"DELETE FROM dataset_data WHERE dataset_id = '{dataset_id}'")
+    logger.info(f"Job {job_id} table[dataset_data] deleted.")
     for data_id in data_ids:
         await pg_db.execute(f"DELETE FROM data WHERE id = '{data_id}'")
 
+    logger.info(f"Job {job_id} table[data] deleted.")
     # 4. Neo4j 相关节点和关系删除
     # 通过 data_id 查找 TextDocument 节点
     for data_id in data_ids:
@@ -54,6 +56,7 @@ async def delete_job_data(job_id):
             "MATCH (n:TextDocument {id: $data_id}) RETURN n.id AS id",
             {"data_id": str(data_id)}
         )
+        logger.info(f"Job {job_id} data_id:{data_id} graph query doc total: {len(docs)}.")
         if not docs:
             continue
         text_doc_id = docs[0]["id"]
@@ -65,6 +68,9 @@ async def delete_job_data(job_id):
         RETURN n.type, n.id
         """
         result = await graph_db.query(cypher, {"doc_id": text_doc_id})
+        logger.info(
+            f"Job {job_id} data_id:{data_id} graph query TextDocument text_doc_id: {text_doc_id} total: {len(result)}."
+        )
         # result 是一个 list，list 的每个元素是 dict，去重
         seen = set()
         unique_result = []
@@ -83,51 +89,64 @@ async def delete_job_data(job_id):
             table = item['n.type']
             node_id = item['n.id']
 
+            logger.info(f"Job {job_id} table[{table}] node_id: {node_id}.")
+
             if table == "Job":
                 await pg_db.execute(
                     f"""DELETE FROM "Job_title" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[Job_title] node_id: {node_id} deleted.")
             if table == "JobSkill":
                 await pg_db.execute(
                     f"""DELETE FROM "JobSkill_name" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[JobSkill_name] node_id: {node_id} deleted.")
             if table == "JobMajor":
                 await pg_db.execute(
                     f"""DELETE FROM "JobMajor_name" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[JobMajor_name] node_id: {node_id} deleted.")
             if table == "JobLocation":
                 await pg_db.execute(
                     f"""DELETE FROM "JobLocation_name" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[JobLocation_name] node_id: {node_id} deleted.")
             if table == "JobFunction":
                 await pg_db.execute(
                     f"""DELETE FROM "JobFunction_name" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[JobFunction_name] node_id: {node_id} deleted.")
             if table == "QualificationItem":
                 await pg_db.execute(
                     f"""DELETE FROM "QualificationItem_item" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[QualificationItem_item] node_id: {node_id} deleted.")
             if table == "ResponsibilityItem":
                 await pg_db.execute(
                     f"""DELETE FROM "ResponsibilityItem_item" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[ResponsibilityItem_item] node_id: {node_id} deleted.")
             if table == "DocumentChunk":
                 await pg_db.execute(
                     f"""DELETE FROM "DocumentChunk_text" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[DocumentChunk_text] node_id: {node_id} deleted.")
             if table == "TextDocument":
                 await pg_db.execute(
                     f"""DELETE FROM "TextDocument_name" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[TextDocument_name] node_id: {node_id} deleted.")
             if table == "TextSummary":
                 await pg_db.execute(
                     f"""DELETE FROM "TextSummary" WHERE id = '{node_id}'"""
                 )
+                logger.info(f"Job {job_id} table[TextSummary] node_id: {node_id} deleted.")
 
         node_ids = [item['n.id'] for item in result]
         # 删除所有相关节点
         if node_ids:
             await graph_db.delete_nodes(node_ids)
+            logger.info(f"Job {job_id} graph node_ids: {node_ids} deleted.")
 
         # 7. 删除 graph_relationship_ledger 相关边记录
         # 通过 node_ids 删除相关边
@@ -135,17 +154,20 @@ async def delete_job_data(job_id):
         await pg_db.execute(
             f"DELETE FROM graph_relationship_ledger WHERE source_node_id IN ({ids_str}) OR destination_node_id IN ({ids_str})"
         )
+        logger.info(f"Job {job_id} table[graph_relationship_ledger] ids_str: {ids_str} deleted.")
 
     # 8. 删除 datasets 表中的记录
     await pg_db.execute(
         f"""DELETE FROM datasets WHERE id = '{dataset_id}'"""
     )
+    logger.info(f"Job {job_id} table[datasets] deleted.")
 
     logger.info(f"Job {job_id} and related data deleted.")
 
 
 if __name__ == "__main__":
-    asyncio.run(
-        # delete_job_data("c43f9992-f0b3-4506-943d-4582694b143f")
-        clearn_all_data()
-    )
+    # asyncio.run(
+    #     delete_job_data("c43f9992-f0b3-4506-943d-4582694b143f")
+    #     # clearn_all_data()
+    # )
+    pass
