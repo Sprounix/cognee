@@ -63,7 +63,7 @@ async def index_graph_edges(batch_size: int = 1024):
             indexed_data_point.metadata["index_fields"] = [field_name]
             index_points[index_name].append(indexed_data_point)
 
-    logger.info(f"get_graph_data index_points")
+    logger.info(f"get_graph_data index_points total: {len(index_points)}")
     for index_key, points in index_points.items():
         index_name, field_name = index_key.split(".")
 
