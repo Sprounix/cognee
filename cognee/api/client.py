@@ -1,7 +1,10 @@
 """FastAPI server for the Cognee API."""
 
 import os
-
+import uuid
+import socket
+import time
+import json
 import uvicorn
 import sentry_sdk
 from traceback import format_exc
@@ -15,7 +18,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.utils import get_openapi
 
 from cognee.exceptions import CogneeApiError
-from cognee.shared.logging_utils import get_logger, setup_logging
+from cognee.shared.logging_utils import get_logger, setup_logging, structlog
 from cognee.api.v1.permissions.routers import get_permissions_router
 from cognee.api.v1.settings.routers import get_settings_router
 from cognee.api.v1.datasets.routers import get_datasets_router
@@ -139,6 +142,91 @@ async def exception_handler(_: Request, exc: CogneeApiError) -> JSONResponse:
     # log the stack trace for easier serverside debugging
     logger.error(format_exc())
     return JSONResponse(status_code=status_code, content={"detail": detail["message"]})
+
+
+def get_real_ip(request: Request) -> str:
+    """获取客户端真实IP地址"""
+    # 可信代理IP列表（根据你的部署环境配置）
+    trusted_proxies = {"127.0.0.1", "::1"}  # 本地代理
+
+    # 获取直接连接的客户端IP
+    client_ip = request.client.host if request.client else None
+
+    # 检查头部
+    x_forwarded_for = request.headers.get("x-forwarded-for")
+    if x_forwarded_for:
+        # X-Forwarded-For 格式: client, proxy1, proxy2
+        proxies = [ip.strip() for ip in x_forwarded_for.split(",")]
+        # 从右向左找到第一个不可信代理
+        for ip in reversed(proxies):
+            if ip not in trusted_proxies:
+                client_ip = ip
+                break
+
+    # 检查其他头部
+    if not client_ip:
+        client_ip = (
+            request.headers.get("cf-connecting-ip") or  # Cloudflare
+            request.headers.get("x-real-ip") or
+            request.client.host
+        )
+
+    return client_ip
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    trace_id = dict(request.headers).get("traceId") or uuid.uuid4().hex
+    structlog.contextvars.bind_contextvars(trace_id=trace_id)
+
+    headers = dict(request.headers)
+    start_time = time.time()
+    server_name = socket.gethostname()
+    content_type = headers.get('content-type')
+    req_body_json = None
+    try:
+        if 'application/json' in content_type:
+            req_body_json = await request.json()
+        elif 'application/x-www-form-urlencoded' in content_type:
+            form_data = await request.form()
+            req_body_json = dict(form_data)
+    except:
+        pass
+
+    response = await call_next(request)
+
+    # pop掉log中不想输出的key
+    for k in ["authorization"]:
+        headers.pop(k, None)
+
+    params = dict(
+        server_name=server_name, url=str(request.url), method=request.method, headers=headers,
+        req_body_args=req_body_json, status_code=response.status_code, res_body=None, client_ip=get_real_ip(request),
+    )
+
+    response_body = b""
+    async for chunk in response.body_iterator:
+        response_body += chunk
+
+    response_body_str = response_body.decode()
+
+    try:
+        response_json = json.loads(response_body_str)
+    except json.JSONDecodeError:
+        response_json = None
+
+    process_time = time.time() - start_time
+    params["res_time"] = round(process_time, 4)
+    params["res_body"] = response_json
+
+    logger.info("log_requests", params)
+
+    return Response(
+        content=response_body_str,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+        media_type=response.media_type
+    )
 
 
 @app.get("/")

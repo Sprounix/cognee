@@ -213,6 +213,7 @@ def setup_logging(log_level=None, name=None):
     # Configure structlog
     structlog.configure(
         processors=[
+            structlog.contextvars.merge_contextvars,
             structlog.stdlib.filter_by_level,
             structlog.stdlib.add_logger_name,
             structlog.stdlib.add_log_level,
