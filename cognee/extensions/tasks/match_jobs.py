@@ -3,7 +3,7 @@ import time
 from typing import Dict, List
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
-from cognee.extensions.cypher.job import get_jobs, get_responsibility_items
+from cognee.extensions.cypher.job import get_jobs
 from cognee.extensions.tasks.recall_job import (
     resume_skill_recall_job_ids,
     resume_desired_positions_and_job_title_recall_job_ids,
@@ -147,7 +147,8 @@ def calc_basic_score_by_weight(score_detail, weight_dict=None):
 
     skill_score = score_detail.get("skill", {}).get("score") or 0
     relevant_experience_score = score_detail.get("experience", {}).get("score") or 0
-    yoe_score = score_detail.get("yoe_score") or 0
+    yoe = score_detail.get("yoe") or {}
+    yoe_score = yoe.get("score") or 0
 
     score = job_title_score * weight_dict["title"] + \
               skill_score * weight_dict["skill"] + \
@@ -227,15 +228,15 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
 
     positions = list(set(positions))
 
-    job_dict = {}
+    skill_job_dict, responsibility_job_dict, job_dict = {}, {}, {}
     if skills:
         logger.info(f"app_user_id:{app_user_id} skills: {skills}")
         job_skill_score_results = await resume_skill_recall_job_ids(skills, top_k=top_k)
         for job_skill_score_result in job_skill_score_results:
             job_id = job_skill_score_result["job_id"]
-            if job_id not in job_dict:
-                job_dict[job_id] = {}
-            job_dict[job_id]["skill"] = job_skill_score_result
+            if job_id not in skill_job_dict:
+                skill_job_dict[job_id] = {}
+            skill_job_dict[job_id]["skill"] = job_skill_score_result
         logger.info(f"app_user_id:{app_user_id} skill recall finish, total: {len(job_skill_score_results)}")
 
     logger.info(f"app_user_id:{app_user_id} positions: {positions}")
@@ -263,9 +264,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         experience_score_results = await resume_work_experiences_recall_job_ids(last_work_experience_contents, top_k=top_k)
         for experience_score_result in experience_score_results:
             job_id = str(experience_score_result["job_id"])
-            if job_id not in job_dict:
-                job_dict[job_id] = {}
-            job_dict[job_id]["experience"] = experience_score_result
+            if job_id not in responsibility_job_dict:
+                responsibility_job_dict[job_id] = {}
+            responsibility_job_dict[job_id]["experience"] = experience_score_result
             responsibility_ids = experience_score_result.get("responsibility_ids")
             for responsibility_id in responsibility_ids:
                 if responsibility_id not in matched_all_responsibility_ids:
@@ -287,6 +288,12 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     for job in jobs:
         job_id = job["id"]
         score_detail = job_dict.get(job_id)
+        skill_match_result = skill_job_dict.get(job_id, {}).get("skill")
+        if skill_match_result:
+            score_detail["skill"] = skill_match_result
+        experience_match_result = responsibility_job_dict.get(job_id, {}).get("experience")
+        if experience_match_result:
+            score_detail["experience"] = experience_match_result
 
         # job_level = job.get("job_level")
         # if job_level:
@@ -298,7 +305,10 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         job_work_years = get_job_work_years(job)
         # logger.info(f"app_user_id:{app_user_id} job_work_years: {job_work_years} user_work_years:{user_work_years}")
         if job_work_years:
-            score_detail["yoe_score"] = calc_work_year_score(job_work_years, user_work_years)
+            yoe_score = calc_work_year_score(job_work_years, user_work_years)
+            score_detail["yoe"] = dict(
+                score=yoe_score, job_work_years=job_work_years, user_work_years=user_work_years
+            )
 
         # base score
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
