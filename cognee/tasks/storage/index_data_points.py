@@ -43,7 +43,7 @@ async def index_data_points(data_points: list[DataPoint]):
             for i in range(0, len(indexable_points), batch_size):
                 batch = indexable_points[i : i + batch_size]
                 await vector_engine.index_data_points(index_name, field_name, batch)
-                logger.info(f"\nindexed {len(batch)} data points for {index_name}.{field_name}")
+                logger.info(f"indexed {len(batch)} data points for {index_name}.{field_name}")
         except EmbeddingException as e:
             logger.warning(f"Failed to index data points for {index_name}.{field_name}: {e}")
 
