@@ -72,3 +72,16 @@ async def get_jobs(job_ids) -> List[Dict]:
     """
     results = await query(cypher)
     return [r["job_json"] for r in results]
+
+
+async def get_internship_jobs(limit=1000) -> List[Dict]:
+    cypher = f"""
+    MATCH (job:Job)
+    WHERE ANY(type IN job.job_type WHERE type = "Internship")
+    RETURN job.id AS job_id
+    ORDER BY job.updated_at DESC 
+    limit {limit}
+    """
+    results = await query(cypher)
+    job_ids = [job["job_id"] for job in results]
+    return job_ids
