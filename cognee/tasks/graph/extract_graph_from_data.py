@@ -33,7 +33,7 @@ async def integrate_chunk_graphs(
         for chunk_index, chunk_graph in enumerate(chunk_graphs):
             data_chunks[chunk_index].contains = chunk_graph
 
-        await add_data_points(chunk_graphs)
+        # await add_data_points(chunk_graphs)
         return data_chunks
 
     logger.info("integrate_chunk_graphs add_data_points")

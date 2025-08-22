@@ -219,7 +219,7 @@ async def log_requests(request: Request, call_next):
     params["res_time"] = round(process_time, 4)
     params["res_body"] = response_json
 
-    logger.info("log_requests", params)
+    logger.info(f"{params}")
 
     return Response(
         content=response_body_str,
