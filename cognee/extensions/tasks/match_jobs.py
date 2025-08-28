@@ -1,6 +1,6 @@
 import datetime
 import time
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
 from cognee.extensions.cypher.job import get_jobs, get_internship_jobs
@@ -12,6 +12,8 @@ from cognee.extensions.tasks.recall_job import (
 )
 from cognee.extensions.utils.extract import extract_experience_years, split_sentences
 from cognee.shared.logging_utils import get_logger
+from cognee.extensions.db.sprounix import base_recall_jobs, get_user_locations
+
 
 logger = get_logger("match_job")
 
@@ -201,11 +203,78 @@ async def get_match_internship_jobs():
     return recall_job_ids
 
 
+def find_matching_skills(resume_skills: List[str], job_skills: List[str],
+                         synonym_map: Dict[str, List[str]] = None) -> Tuple[float, List[Tuple[str, str]]]:
+    """
+    计算技能相似度并返回匹配的技能对
+
+    参数:
+        resume_skills: 简历中的技能列表
+        job_skills: 工作要求的技能列表
+        synonym_map: 同义词映射表
+
+    返回:
+        相似度分数(0-1)和匹配的技能对列表
+    """
+    # 默认同义词映射（可根据行业扩展）
+    synonym_map = synonym_map or {
+        "machine learning": ["ml", "machine learning algorithms"],
+        "data analysis": ["data analytics", "analyzing data"],
+        "sql": ["structured query language"],
+        "python": ["python programming"]
+    }
+
+    # 统一处理函数：标准化技能名称
+    def normalize(skill: str) -> str:
+        skill_lower = skill.lower()
+        for standard, variants in synonym_map.items():
+            if skill_lower == standard.lower() or skill_lower in [v.lower() for v in variants]:
+                return standard.lower()
+        return skill_lower
+
+    # 标准化技能列表并保留原始值（用于展示）
+    resume_normalized = [(skill, normalize(skill)) for skill in resume_skills]
+    job_normalized = [(skill, normalize(skill)) for skill in job_skills]
+
+    # 查找匹配的技能对
+    matched_pairs = []
+    matched_job_skills = set()  # 避免工作技能被重复匹配
+
+    # 优先匹配完全一致或同义词
+    for res_skill, res_norm in resume_normalized:
+        for job_skill, job_norm in job_normalized:
+            if res_norm == job_norm and job_skill not in matched_job_skills:
+                matched_pairs.append((res_skill, job_skill))
+                matched_job_skills.add(job_skill)
+                break
+
+    # 计算相似度（匹配数量 / 总技能数）
+    total_skills = len(set(res[1] for res in resume_normalized) | set(job[1] for job in job_normalized))
+    similarity = len(matched_pairs) / total_skills if total_skills > 0 else 0.0
+
+    return similarity, matched_pairs
+
+
+async def base_recall_jobs_multi_location(job_type: list, titles: list, locations: list, limit: int = 1000):
+    """
+    multi location
+    :return [{"job_id": "", "distance_meters": 10000}, ]
+    """
+    recall_results = await asyncio.gather(
+        *[base_recall_jobs(
+            job_type=job_type, titles=titles, location=location, limit=limit
+        ) for location in locations]
+    )
+    merged = [item for sublist in recall_results for item in sublist]
+    merged = sorted(merged, key=lambda x: x["distance_meters"], reverse=True)
+    return merged
+
+
 async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     start = time.perf_counter()
     desired_position = payload.desired_position
     resume = payload.resume
-    app_user_id = payload.app_user_id
+    app_user_id = str(payload.app_user_id)
     top_k = 300
 
     desired_locations = desired_position.get("city") or []
@@ -219,6 +288,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
 
     # job_level = resume.get("job_level") or []
     desired_job_type_list = desired_position.get("job_type") or []
+    desired_job_type_list = [job_type for job_type in desired_job_type_list if job_type != "Not sure yet"]
 
     user_work_years = calc_resume_work_years(work_experiences)
     positions = list(set(positions))
@@ -236,9 +306,26 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
 
     skill_job_dict, responsibility_job_dict, job_dict = {}, {}, {}
 
-    is_internship = "Internship" in desired_job_type_list
-    if is_internship:
-        recall_job_ids = await get_match_internship_jobs()
+    user_locations = await get_user_locations(app_user_id)
+    logger.info(
+        f"app_user_id:{app_user_id} user_job_type: {desired_job_type_list} positions: {positions} "
+        f"user_locations: {user_locations}"
+    )
+    if user_locations:
+        basic_recall_job_limit = int(1200/len(user_locations))
+        basic_recall_jobs = await base_recall_jobs_multi_location(
+            job_type=desired_job_type_list, titles=positions, locations=user_locations, limit=basic_recall_job_limit
+        )
+        logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(basic_recall_jobs)}")
+        recall_job_ids = [job["job_id"] for job in basic_recall_jobs]
+        job_dict = {
+            job["job_id"]: dict(
+                title=dict(score=1),
+                function=dict(score=1),
+                job_type=dict(score=1),
+                distance_meters=job["distance_meters"]
+            ) for job in basic_recall_jobs
+        }
     else:
         if skills:
             logger.info(f"app_user_id:{app_user_id} skills: {skills}")
@@ -296,13 +383,20 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     logger.info(f"app_user_id:{app_user_id} get jobs from graphdb total: {len(jobs)}")
     if not jobs:
         return []
+
     match_results = []
     for job in jobs:
         job_id = job["id"]
+        job_skills = job["skills"]
+
         score_detail = job_dict.get(job_id) or {}
         skill_match_result = skill_job_dict.get(job_id, {}).get("skill")
         if skill_match_result:
             score_detail["skill"] = skill_match_result
+        elif job_skills and skills:
+            skill_score, match_skills = find_matching_skills(skills, [skill["name"] for skill in job_skills])
+            score_detail["skill"] = dict(score=skill_score, match_skills=match_skills)
+
         experience_match_result = responsibility_job_dict.get(job_id, {}).get("experience")
         if experience_match_result:
             score_detail["experience"] = experience_match_result
@@ -326,10 +420,16 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
 
         score = score_detail["b_score"]
-        if desired_locations:
+        if user_locations:
+            distance_meters = score_detail.get("distance_meters") or None
             work_locations = job.get("work_locations") or []
             work_location_name_list = [wl["name"] for wl in work_locations]
-            if bool(set(desired_locations) & set(work_location_name_list)):
+            if distance_meters is not None:
+                if distance_meters < 1000:
+                    score_detail["location_score"] = 1
+                else:
+                    score_detail["location_score"] = 0.8
+            elif bool(set(desired_locations) & set(work_location_name_list)):
                 score_detail["location_score"] = 1
                 score = score + 1
             elif state_match(desired_locations, work_location_name_list):
@@ -345,7 +445,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             score_detail["major_score"] = 1
             score = score + 0.1
 
-        if not is_internship and score == 0:
+        if score == 0:
             continue
 
         score_detail["score"] = score
