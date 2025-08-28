@@ -461,6 +461,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
                     score_detail["location_score"] = 1
                 else:
                     score_detail["location_score"] = 0.8
+                score = score + score_detail["location_score"]
             elif bool(set(desired_locations) & set(work_location_name_list)):
                 score_detail["location_score"] = 1
                 score = score + 1
