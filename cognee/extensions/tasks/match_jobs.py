@@ -1,10 +1,11 @@
+import asyncio
 import datetime
 import time
-import asyncio
 from typing import Dict, List, Tuple
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
 from cognee.extensions.cypher.job import get_jobs, get_internship_jobs
+from cognee.extensions.db.sprounix import base_recall_jobs, get_user_locations
 from cognee.extensions.tasks.recall_job import (
     resume_skill_recall_job_ids,
     resume_desired_positions_and_job_title_recall_job_ids,
@@ -13,8 +14,6 @@ from cognee.extensions.tasks.recall_job import (
 )
 from cognee.extensions.utils.extract import extract_experience_years, split_sentences
 from cognee.shared.logging_utils import get_logger
-from cognee.extensions.db.sprounix import base_recall_jobs, get_user_locations
-
 
 logger = get_logger("match_job")
 
@@ -67,26 +66,35 @@ def calc_work_year_score(jd_work_years, resume_work_years):
     :param resume_work_years: resume work years
     :return:
     """
-    diff_low_dict = {0: 1, 1: 0.9, 2: 0.8, 3: 0.7, 4: 0.5, 5: 0.1, 6: 0.1}
-    diff_high_dict = {0: 1, 1: 1, 2: 0.95, 3: 0.8, 4: 0.7, 5: 0.1, 6: 0.1}
-    epi = 0.00001
     low = jd_work_years['low']
-    high = jd_work_years['high'] or -1
-    diff_low = low - resume_work_years
-    diff_high = resume_work_years - high
-    if diff_low > 0:
-        if diff_low >= 6:
+    diff_years = int(low - resume_work_years)
+    if not resume_work_years:
+        if not low:
+            return 1
+        elif low > 2:
             return 0.01
         else:
-            return diff_low_dict[round(diff_low + epi)]
-    if diff_high > 0 and high > 0:
-        diff_high = round(diff_high + epi)
-        if diff_high >= 6:
-            return 0.05
+            weight = {1: 0.8, 2: 0.5}
+            return weight.get(low) or 0.6
+    elif 3 <= resume_work_years <= 5:
+        _diff_years = abs(diff_years)
+        if _diff_years > 2:
+            return 0.01
+        weight = {0: 1, 1: 0.8, 2: 0.5}
+        return weight.get(_diff_years) or 0.6
+    else:
+        if diff_years > 0:
+            if diff_years > 2:
+                return 0.01
+            else:
+                weight = {0: 1, 1: 0.8, 2: 0.5}
+                return weight.get(diff_years) or 0.6
         else:
-            return diff_high_dict[diff_high]
-    return 1
-
+            _diff_years = abs(diff_years)
+            if _diff_years > 2:
+                return 0.6
+            weight = {0: 1, 1: 0.8, 2: 0.6}
+            return weight.get(_diff_years) or 0.6
 
 def calc_job_level(job_level_code, user_job_level_code):
     if job_level_code == user_job_level_code:
@@ -437,6 +445,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             score_detail["yoe"] = dict(
                 score=yoe_score, job_work_years=job_work_years, user_work_years=user_work_years
             )
+            if yoe_score < 0.6:
+                continue
 
         # base score
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
