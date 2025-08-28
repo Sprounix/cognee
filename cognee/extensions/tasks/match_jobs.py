@@ -1,5 +1,6 @@
 import datetime
 import time
+import asyncio
 from typing import Dict, List, Tuple
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
@@ -459,8 +460,6 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
 
 
 if __name__ == '__main__':
-    import asyncio
-
     d = {'app_user_id': 'c525dc05-3bbe-446e-84bf-ab0fdbd5e75a',
      'desired_position': {'id': 'c89daf3b-08dc-4f11-bb7f-6676eafa0aa9',
                           'app_user_id': 'c525dc05-3bbe-446e-84bf-ab0fdbd5e75a', 'city': [],
