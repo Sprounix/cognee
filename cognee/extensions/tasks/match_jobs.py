@@ -321,9 +321,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             job_type=desired_job_type_list, titles=positions, locations=user_locations, limit=basic_recall_job_limit
         )
         logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(basic_recall_jobs)} by positions")
-        recall_job_ids = [job["job_id"] for job in basic_recall_jobs]
+        recall_job_ids = [str(job["job_id"]) for job in basic_recall_jobs]
         job_dict = {
-            job["job_id"]: dict(
+            str(job["job_id"]): dict(
                 title=dict(score=1),
                 function=dict(score=1),
                 job_type=dict(score=1),
@@ -337,9 +337,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             )
             logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(skill_basic_recall_jobs)} by skills")
             for skill_job in skill_basic_recall_jobs:
-                if skill_job["job_id"] not in recall_job_ids:
-                    recall_job_ids.append(skill_job["job_id"])
-                    job_dict[skill_job["job_id"]] = dict(
+                if str(skill_job["job_id"]) not in recall_job_ids:
+                    recall_job_ids.append(str(skill_job["job_id"]))
+                    job_dict[str(skill_job["job_id"])] = dict(
                             title=dict(score=0.8),
                             function=dict(score=0.8),
                             job_type=dict(score=1),
