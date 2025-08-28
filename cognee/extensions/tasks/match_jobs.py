@@ -303,6 +303,10 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     positions = []
     for desired_position in desired_positions:
         split_desired_positions = desired_position.split("/")
+        # "Operations Manager/Director"
+        if len(split_desired_positions) == 2 and " " in split_desired_positions[0]:
+            base_word = split_desired_positions[0].split(" ")[0]
+            split_desired_positions[1] = f"{base_word} {split_desired_positions[1]}"
         for p in split_desired_positions:
             positions.append(p.strip())
 
