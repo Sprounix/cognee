@@ -57,6 +57,7 @@ async def base_recall_jobs(job_type: list, titles: list, location: dict, limit: 
         FROM job_locations AS loc, 
              job_details as jd
         WHERE jd.id = loc.job_id
+            AND jd.posted_time >= NOW() - INTERVAL '30 days'
             {job_title_sql}
             AND ST_DWithin(
                     loc.geom::geography, 
