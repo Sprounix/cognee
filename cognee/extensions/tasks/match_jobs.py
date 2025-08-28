@@ -320,7 +320,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         f"user_locations: {user_locations} skills: {skills}"
     )
     if user_locations:
-        basic_recall_job_limit = int(1200/len(user_locations))
+        basic_recall_job_limit = int(top_k/len(user_locations))
         basic_recall_jobs = await base_recall_jobs_multi_location(
             job_type=desired_job_type_list, titles=positions, locations=user_locations, limit=basic_recall_job_limit
         )
@@ -335,7 +335,6 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             ) for job in basic_recall_jobs
         }
         if len(basic_recall_jobs) < 12 and skills:
-            basic_recall_job_limit = int(1200 / len(skills))
             skill_basic_recall_jobs = await base_recall_jobs_multi_location(
                 job_type=desired_job_type_list, titles=skills, locations=user_locations, limit=basic_recall_job_limit
             )
