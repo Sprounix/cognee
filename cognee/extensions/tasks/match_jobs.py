@@ -279,7 +279,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     top_k = 300
 
     desired_locations = desired_position.get("city") or []
-    positions = desired_position.get("positions") or []
+    desired_positions = desired_position.get("positions") or []
     industries = desired_position.get("industries") or []
 
     skills = resume.get("skills") or []
@@ -292,16 +292,19 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     desired_job_type_list = [job_type for job_type in desired_job_type_list if job_type != "Not sure yet"]
 
     user_work_years = calc_resume_work_years(work_experiences)
-    positions = list(set(positions))
 
     last_work_experience = get_last_work_experience(work_experiences)
     last_work_experience_description = last_work_experience.get("description") or ""
     last_work_experience_job_title = last_work_experience.get("job") or ""
 
     if last_work_experience_job_title:
-        split_positions = last_work_experience_job_title.split("/")
-        for position in split_positions:
-            positions.append(position.strip())
+        desired_positions.append(last_work_experience_job_title.strip())
+
+    positions = []
+    for desired_position in desired_positions:
+        split_desired_positions = desired_position.split("/")
+        for p in split_desired_positions:
+            positions.append(p.strip())
 
     positions = list(set(positions))
 
@@ -310,14 +313,14 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     user_locations = await get_user_locations(app_user_id)
     logger.info(
         f"app_user_id:{app_user_id} user_job_type: {desired_job_type_list} positions: {positions} "
-        f"user_locations: {user_locations}"
+        f"user_locations: {user_locations} skills: {skills}"
     )
     if user_locations:
         basic_recall_job_limit = int(1200/len(user_locations))
         basic_recall_jobs = await base_recall_jobs_multi_location(
             job_type=desired_job_type_list, titles=positions, locations=user_locations, limit=basic_recall_job_limit
         )
-        logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(basic_recall_jobs)}")
+        logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(basic_recall_jobs)} by positions")
         recall_job_ids = [job["job_id"] for job in basic_recall_jobs]
         job_dict = {
             job["job_id"]: dict(
@@ -327,6 +330,21 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
                 distance_meters=job["distance_meters"]
             ) for job in basic_recall_jobs
         }
+        if len(basic_recall_jobs) < 12 and skills:
+            basic_recall_job_limit = int(1200 / len(skills))
+            skill_basic_recall_jobs = await base_recall_jobs_multi_location(
+                job_type=desired_job_type_list, titles=skills, locations=user_locations, limit=basic_recall_job_limit
+            )
+            logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(skill_basic_recall_jobs)} by skills")
+            for skill_job in skill_basic_recall_jobs:
+                if skill_job["job_id"] not in recall_job_ids:
+                    recall_job_ids.append(skill_job["job_id"])
+                    job_dict[skill_job["job_id"]] = dict(
+                            title=dict(score=0.8),
+                            function=dict(score=0.8),
+                            job_type=dict(score=1),
+                            distance_meters=skill_job["distance_meters"]
+                        )
     else:
         if skills:
             logger.info(f"app_user_id:{app_user_id} skills: {skills}")

@@ -37,7 +37,10 @@ async def base_recall_jobs(job_type: list, titles: list, location: dict, limit: 
 
     job_type_sql = ""
     if job_type:
-        job_type_sql = f"AND jd.job_type IN {tuple(job_type)}"
+        if len(job_type) == 1:
+            job_type_sql = f"AND jd.job_type = '{job_type[0]}'"
+        else:
+            job_type_sql = f"AND jd.job_type IN {tuple(job_type)}"
 
     job_title_sql = ""
     if titles:
