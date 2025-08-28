@@ -205,7 +205,7 @@ async def get_match_internship_jobs():
 
 
 def find_matching_skills(resume_skills: List[str], job_skills: List[str],
-                         synonym_map: Dict[str, List[str]] = None) -> Tuple[float, List[Tuple[str, str]]]:
+                         synonym_map: Dict[str, List[str]] = None) -> Tuple[float, List[str]]:
     """
     计算技能相似度并返回匹配的技能对
 
@@ -238,22 +238,22 @@ def find_matching_skills(resume_skills: List[str], job_skills: List[str],
     job_normalized = [(skill, normalize(skill)) for skill in job_skills]
 
     # 查找匹配的技能对
-    matched_pairs = []
+    matched_resume_skills = []
     matched_job_skills = set()  # 避免工作技能被重复匹配
 
     # 优先匹配完全一致或同义词
     for res_skill, res_norm in resume_normalized:
         for job_skill, job_norm in job_normalized:
             if res_norm == job_norm and job_skill not in matched_job_skills:
-                matched_pairs.append((res_skill, job_skill))
+                matched_resume_skills.append(res_skill)
                 matched_job_skills.add(job_skill)
                 break
 
     # 计算相似度（匹配数量 / 总技能数）
     total_skills = len(set(res[1] for res in resume_normalized) | set(job[1] for job in job_normalized))
-    similarity = len(matched_pairs) / total_skills if total_skills > 0 else 0.0
+    similarity = len(matched_resume_skills) / total_skills if total_skills > 0 else 0.0
 
-    return similarity, matched_pairs
+    return similarity, matched_resume_skills
 
 
 async def base_recall_jobs_multi_location(job_type: list, titles: list, locations: list, limit: int = 1000):
