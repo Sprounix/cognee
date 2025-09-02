@@ -342,20 +342,20 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
                 distance_meters=job["distance_meters"]
             ) for job in basic_recall_jobs
         }
-        if len(basic_recall_jobs) < 12 and skills:
-            skill_basic_recall_jobs = await base_recall_jobs_multi_location(
-                job_type=desired_job_type_list, titles=skills, locations=user_locations, limit=basic_recall_job_limit
-            )
-            logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(skill_basic_recall_jobs)} by skills")
-            for skill_job in skill_basic_recall_jobs:
-                if str(skill_job["job_id"]) not in recall_job_ids:
-                    recall_job_ids.append(str(skill_job["job_id"]))
-                    job_dict[str(skill_job["job_id"])] = dict(
-                            title=dict(score=0.8),
-                            function=dict(score=0.8),
-                            job_type=dict(score=1),
-                            distance_meters=skill_job["distance_meters"]
-                        )
+        # if len(basic_recall_jobs) < 12 and skills:
+        #     skill_basic_recall_jobs = await base_recall_jobs_multi_location(
+        #         job_type=desired_job_type_list, titles=skills, locations=user_locations, limit=basic_recall_job_limit
+        #     )
+        #     logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(skill_basic_recall_jobs)} by skills")
+        #     for skill_job in skill_basic_recall_jobs:
+        #         if str(skill_job["job_id"]) not in recall_job_ids:
+        #             recall_job_ids.append(str(skill_job["job_id"]))
+        #             job_dict[str(skill_job["job_id"])] = dict(
+        #                     title=dict(score=0.8),
+        #                     function=dict(score=0.8),
+        #                     job_type=dict(score=1),
+        #                     distance_meters=skill_job["distance_meters"]
+        #                 )
     else:
         if skills:
             logger.info(f"app_user_id:{app_user_id} skills: {skills}")
