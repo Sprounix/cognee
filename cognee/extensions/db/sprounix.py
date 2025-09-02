@@ -1,6 +1,11 @@
 import asyncio
 
 from cognee.extensions.db import get_sprounix_relational_engine
+from cognee.shared.logging_utils import get_logger
+
+
+logger = get_logger("sprounix")
+
 
 
 async def get_user_locations(app_user_id: str):
@@ -71,6 +76,7 @@ async def base_recall_jobs(job_type: list, titles: list, location: dict, limit: 
         ORDER BY distance_meters
         limit {limit}
     """
+    logger.info(sql)
     results = await db_engine.execute_query(sql)
     return results
 
