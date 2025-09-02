@@ -28,7 +28,8 @@ async def get_user_locations(app_user_id: str):
     return results
 
 
-async def base_recall_jobs(job_type: list, titles: list, location: dict, limit: int = 1000):
+async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, location: dict, limit: int = 1000,
+                           posted_time_last_days=30):
     """
     base recall jobs, by job_type & titles * location
     """
@@ -39,6 +40,7 @@ async def base_recall_jobs(job_type: list, titles: list, location: dict, limit: 
     lng = location.get("lng")
     lat = location.get("lat")
     radius = location.get("radius") or 50000
+    posted_time_last_days = posted_time_last_days or 30
 
     job_type_sql = ""
     if job_type:
@@ -64,14 +66,14 @@ async def base_recall_jobs(job_type: list, titles: list, location: dict, limit: 
         FROM job_locations AS loc, 
              job_details AS jd
         WHERE jd.id = loc.job_id
-            AND jd.posted_time >= NOW() - INTERVAL '30 days'
+            AND jd.posted_time >= NOW() - INTERVAL '{posted_time_last_days} days'
             {job_title_sql}
             AND ST_DWithin(
                     loc.geom::geography, 
                     ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326)::geography, 
                     {radius}
                 )
-            AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE job_id = jd.id)
+            AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             {job_type_sql} 
         ORDER BY distance_meters
         limit {limit}

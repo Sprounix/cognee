@@ -264,14 +264,16 @@ def find_matching_skills(resume_skills: List[str], job_skills: List[str],
     return similarity, matched_resume_skills
 
 
-async def base_recall_jobs_multi_location(job_type: list, titles: list, locations: list, limit: int = 1000):
+async def base_recall_jobs_multi_location(
+        app_user_id: str, job_type: list, titles: list, locations: list, limit: int = 1000
+):
     """
     multi location
     :return [{"job_id": "", "distance_meters": 10000}, ]
     """
     recall_results = await asyncio.gather(
         *[base_recall_jobs(
-            job_type=job_type, titles=titles, location=location, limit=limit
+            app_user_id=app_user_id, job_type=job_type, titles=titles, location=location, limit=limit
         ) for location in locations]
     )
     merged = [item for sublist in recall_results for item in sublist]
@@ -330,7 +332,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     if user_locations:
         basic_recall_job_limit = int(top_k/len(user_locations))
         basic_recall_jobs = await base_recall_jobs_multi_location(
-            job_type=desired_job_type_list, titles=positions, locations=user_locations, limit=basic_recall_job_limit
+            app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions, locations=user_locations,
+            limit=basic_recall_job_limit
         )
         logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(basic_recall_jobs)} by positions")
         recall_job_ids = [str(job["job_id"]) for job in basic_recall_jobs]
