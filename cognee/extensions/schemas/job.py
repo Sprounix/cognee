@@ -143,25 +143,28 @@ class Job(DataPoint):
         description="Job level include Internship, Entry-level, Junior, Mid-level, Senior, Lead, Principal, Staff, Manager, Director, Executive, Other",
         examples=["Senior"]
     )
+    # compensation: str = Field(
+    #     default="",
+    #     title="Compensation",
+    #     description="Compensation Range",
+    #     examples=["$200,000.00/yr - $500,000.00/yr"]
+    # )
     job_function: JobFunction = Field(
         title="Job function",
         description="Extract the core job title,  (i.e., the standard name of the position, such as `Python Engineer` or `Product Manager`) from the given job title, ignoring non-job title information such as location, industry direction, experience requirements, and skill attachments contained in the text.",
         examples=[{"name": "Python Engineer"}]
     )
     work_locations: List[JobLocation] = Field(
-        default=[],
         title="Work Locations",
-        description='All specified work locations. Look for city/state names. Also, explicitly identify if the role is "Remote", "Hybrid", or "On-site".',
-        examples=[{"name": "New York, NY"}, {"name": "Remote"},]
+        description='All specified work locations. Look for city/area/state names.',
+        examples=[{"name": "New York, NY"},]
     )
     skills: List[JobSkill] = Field(
-        default=[],
-        title="Skill Tags",
-        description="Core professional skill tags required for the job",
+        title="Core Skill Tags",
+        description="Core professional skill tags required for the job, with a maximum of 8 tags.",
         examples=[{"name": "Python"}]
     )
     job_type: List[str] = Field(
-        default=[],
         title="Job Type",
         description="job types include Internship, Full-time, Part-time, Contract, Temporary, Per Diem, Seasonal, Other.",
         examples=["Full-time"]
@@ -173,7 +176,6 @@ class Job(DataPoint):
     #     examples=["Bachelor"]
     # )
     majors: List[JobMajor] = Field(
-        default=[],
         title="Major requirements",
         description="Requirements for professional fields or disciplines of the job.",
         examples=[{"name": "Computer Science"}]
@@ -195,9 +197,8 @@ class Job(DataPoint):
         description="Job qualification requirements, including required and preferred requirements, every item returned sentence by sentence.",
     )
     responsibilities: List[ResponsibilityItem] = Field(
-        default=[],
-        title="Responsibility requirements",
-        description="Descriptions of responsibilities and tasks of the job, every item returned sentence by sentence.",
+        title="Core Responsibilities",
+        description="Summarize the core responsibilities of the current position, with a maximum of 5 item, every item returned sentence by sentence.",
     )
 
     metadata: Dict = {
