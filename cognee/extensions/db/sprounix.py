@@ -58,7 +58,7 @@ async def get_jobs(job_ids):
             jd.job_function,
             jde.result
         FROM job_detail_extract_result AS jde 
-        JOIN job_details AS jd ON jd.id = jde.job_id
+        JOIN job_details AS jd ON jd.id = jde.id
         WHERE {id_sql}
     """
     results = await db_engine.execute_query(sql)
