@@ -4,8 +4,8 @@ import time
 from typing import Dict, List, Tuple
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
-from cognee.extensions.cypher.job import get_jobs, get_internship_jobs
-from cognee.extensions.db.sprounix import base_recall_jobs, get_user_locations
+from cognee.extensions.cypher.job import get_internship_jobs
+from cognee.extensions.db.sprounix import base_recall_jobs, get_user_locations, get_jobs
 from cognee.extensions.tasks.recall_job import (
     resume_skill_recall_job_ids,
     resume_desired_positions_and_job_title_recall_job_ids,

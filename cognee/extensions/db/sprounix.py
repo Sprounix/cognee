@@ -39,6 +39,44 @@ async def get_user_locations(app_user_id: str):
     return results
 
 
+async def get_jobs(job_ids):
+    """
+    get jobs
+    """
+    db_engine = get_sprounix_relational_engine()
+    if len(job_ids) == 1:
+        id_sql = f"jd.id = '{job_ids[0]}'"
+    else:
+        id_sql = f"jd.id IN {tuple(job_ids)}"
+    sql = f"""
+        SELECT 
+            jd.id,
+            jd.title,
+            jd.job_level,
+            jd.location,
+            jd.job_type,
+            jd.job_function,
+            jde.result
+        FROM job_detail_extract_result AS jde 
+        JOIN job_details AS jd ON jd.id = loc.job_id
+        WHERE {id_sql}
+    """
+    results = await db_engine.execute_query(sql)
+    for job in results:
+        result = job.pop("result")
+        skills = result.get("skills") or []
+        majors = result.get("majors") or []
+        responsibilities = result.get("responsibilities") or []
+        qualification = result.get("qualification") or {}
+        work_years = result.get("work_years") or ""
+        job["skills"] = skills
+        job["majors"] = majors
+        job["qualification"] = qualification
+        job["responsibilities"] = responsibilities
+        job["work_years"] = work_years
+    return results
+
+
 async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skills: list, location: dict,
                            limit: int = 1000, posted_time_last_days=30):
     """
@@ -90,7 +128,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
             AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             {job_type_sql}
             AND jsi.weighted_tsvector @@ query
-        ORDER BY relevance_score
+        ORDER BY relevance_score DESC
         limit {limit}
     """
     logger.info(sql)
