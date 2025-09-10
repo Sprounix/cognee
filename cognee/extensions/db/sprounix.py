@@ -66,7 +66,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
     items = list(set([item.lower() for item in to_tsquery_items if item]))
     tsquery_cond = generate_tsquery(items)
 
-    weights = '{0, 0, 0.7, 1.0}'  # D C B A
+    weights = {0, 0, 0.7, 1.0}  # D C B A
 
     sql = f"""
         SELECT 
@@ -75,7 +75,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
                 loc.geom::geography, 
                 ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326)::geography
             ) AS distance_meters,
-            ts_rank_cd({weights}, jsi.weighted_tsvector, query) AS relevance_score
+            ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score
         FROM job_locations AS loc
         JOIN job_details AS jd ON jd.id = loc.job_id 
         JOIN job_search_index jsi ON jd.id = jsi.job_id 
