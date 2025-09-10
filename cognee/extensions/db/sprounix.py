@@ -66,11 +66,12 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
     items = list(set([item.lower() for item in to_tsquery_items if item]))
     tsquery_cond = generate_tsquery(items)
 
-    weights = {0, 0, 0.7, 1.0}  # D C B A
+    weights = "{0, 0, 0.7, 1.0}"  # D C B A
 
     sql = f"""
         SELECT 
             loc.job_id,
+            jd.title,
             ST_Distance(
                 loc.geom::geography, 
                 ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326)::geography
