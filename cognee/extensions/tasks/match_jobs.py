@@ -265,7 +265,7 @@ def find_matching_skills(resume_skills: List[str], job_skills: List[str],
 
 
 async def base_recall_jobs_multi_location(
-        app_user_id: str, job_type: list, titles: list, locations: list, limit: int = 1000
+        app_user_id: str, job_type: list, titles: list, skills: list, locations: list, limit: int = 1000
 ):
     """
     multi location
@@ -273,11 +273,11 @@ async def base_recall_jobs_multi_location(
     """
     recall_results = await asyncio.gather(
         *[base_recall_jobs(
-            app_user_id=app_user_id, job_type=job_type, titles=titles, location=location, limit=limit
+            app_user_id=app_user_id, job_type=job_type, titles=titles, skills=skills, location=location, limit=limit
         ) for location in locations]
     )
     merged = [item for sublist in recall_results for item in sublist]
-    merged = sorted(merged, key=lambda x: x["distance_meters"], reverse=True)
+    merged = sorted(merged, key=lambda x: x["relevance_score"], reverse=False)
     return merged
 
 
@@ -291,6 +291,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     desired_locations = desired_position.get("city") or []
     desired_positions = desired_position.get("positions") or []
     industries = desired_position.get("industries") or []
+
+    predict_job_titles = desired_position.get("predict_job_titles") or []
+    predict_professional_skills = desired_position.get("predict_professional_skills") or []
 
     skills = resume.get("skills") or []
     work_experiences = resume.get("work_experiences") or []
@@ -319,7 +322,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             split_desired_positions[1] = f"{base_word} {split_desired_positions[1]}"
         for p in split_desired_positions:
             positions.append(p.strip())
-
+    positions = positions + predict_job_titles
     positions = list(set(positions))
 
     skill_job_dict, responsibility_job_dict, job_dict = {}, {}, {}
@@ -332,8 +335,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     if user_locations:
         basic_recall_job_limit = int(top_k/len(user_locations))
         basic_recall_jobs = await base_recall_jobs_multi_location(
-            app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions, locations=user_locations,
-            limit=basic_recall_job_limit
+            app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
+            skills=predict_professional_skills, locations=user_locations, limit=basic_recall_job_limit
         )
         logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(basic_recall_jobs)} by positions")
         recall_job_ids = [str(job["job_id"]) for job in basic_recall_jobs]

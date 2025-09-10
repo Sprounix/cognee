@@ -198,7 +198,7 @@ class Job(DataPoint):
     )
     responsibilities: List[ResponsibilityItem] = Field(
         title="Core Responsibilities",
-        description="Summarize the core responsibilities of the current position, with a maximum of 5 item, every item returned sentence by sentence.",
+        description="Summarize the core responsibilities of the current position, with a maximum of 5 item, every item returned sentence by sentence.If the current job description does not mention specific core responsibilities, it is necessary to generate main duties based on the job description.",
     )
 
     metadata: Dict = {
