@@ -277,7 +277,7 @@ async def base_recall_jobs_multi_location(
         ) for location in locations]
     )
     merged = [item for sublist in recall_results for item in sublist]
-    merged = sorted(merged, key=lambda x: x["relevance_score"], reverse=False)
+    merged = sorted(merged, key=lambda x: x["relevance_score"], reverse=True)
     return merged
 
 
