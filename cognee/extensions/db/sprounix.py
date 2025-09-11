@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 from cognee.extensions.db import get_sprounix_relational_engine
 from cognee.shared.logging_utils import get_logger
@@ -8,13 +9,35 @@ logger = get_logger("sprounix")
 
 
 def generate_tsquery(queries):
-    # 处理职位标题
+    def escape_tsquery_term(term):
+        """转义单个TSQuery术语中的特殊字符"""
+        # PostgreSQL TSQuery需要转义的特殊字符: ! & | ( ) : * < >
+        # 将特殊字符替换为空格或进行适当处理
+        term = re.sub(r'[!&|():*<>]', ' ', term)
+        # 移除多余空格并确保不为空
+        term = re.sub(r'\s+', ' ', term).strip()
+        return term
+
     item_queries = []
     for item in queries:
+        # 转义整个项目中的特殊字符
+        safe_item = escape_tsquery_term(item.lower())
+        if not safe_item:  # 如果转义后为空，跳过
+            continue
+
         # 分割多词职位标题并用 & 连接
-        words = item.lower().split()
+        words = safe_item.split()
+        # 过滤掉空词
+        words = [word for word in words if word]
+        if not words:  # 如果没有有效词汇，跳过
+            continue
+
         item_query = " & ".join(words)
         item_queries.append(f"({item_query})")
+
+    if not item_queries:
+        return ""  # 或返回一个默认查询，如 "''"
+
     tsquery = " | ".join(item_queries)
     return tsquery
 
