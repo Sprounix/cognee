@@ -430,8 +430,12 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         if skill_match_result:
             score_detail["skill"] = skill_match_result
         elif job_skills and skills:
-            skill_score, match_skills = find_matching_skills(skills, [skill["name"] for skill in job_skills])
-            score_detail["skill"] = dict(score=skill_score, match_skills=match_skills)
+            fix_job_skills = [skill for skill in job_skills if isinstance(skill, str)]
+            if not fix_job_skills:
+                fix_job_skills = [skill["name"] for skill in job_skills if isinstance(skill, dict)]
+            if fix_job_skills:
+                skill_score, match_skills = find_matching_skills(skills, fix_job_skills)
+                score_detail["skill"] = dict(score=skill_score, match_skills=match_skills)
 
         experience_match_result = responsibility_job_dict.get(job_id, {}).get("experience")
         if experience_match_result:
