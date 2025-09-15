@@ -72,13 +72,16 @@ async def get_jobs(job_ids):
     else:
         id_sql = f"jd.id IN {tuple(job_ids)}"
     sql = f"""
-        SELECT 
+        SELECT
+            jd.company_id, 
             jd.id,
             jd.title,
             jd.job_level,
             jd.location,
             jd.job_type,
             jd.job_function,
+            jd.job_md5,
+            jd.posted_time,
             jde.result
         FROM job_detail_extract_result AS jde 
         JOIN job_details AS jd ON jd.id = jde.id
@@ -131,16 +134,22 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
 
     sql = f"""
         SELECT 
-            loc.job_id,
-            jd.title,
+            jd.id AS job_id,
+            -- jd.title,
             ST_Distance(
                 loc.geom::geography, 
                 ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326)::geography
             ) AS distance_meters,
             ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score
-        FROM job_locations AS loc
-        JOIN job_details AS jd ON jd.id = loc.job_id 
-        JOIN job_search_index jsi ON jd.id = jsi.job_id 
+        FROM (
+            SELECT DISTINCT ON (location, job_md5)
+                id, title, location, job_md5, posted_time, job_type
+            FROM job_details 
+            WHERE posted_time >= NOW() - INTERVAL '{posted_time_last_days} days'
+            ORDER BY location, job_md5, posted_time DESC, id DESC
+        ) AS jd 
+        JOIN job_locations AS loc ON jd.id = loc.job_id 
+        JOIN job_weighted_vector jsi ON jd.id = jsi.job_id 
         CROSS JOIN to_tsquery('english', '{tsquery_cond}') AS query
         WHERE jd.posted_time >= NOW() - INTERVAL '{posted_time_last_days} days'
             AND ST_DWithin(

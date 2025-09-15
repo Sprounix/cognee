@@ -307,7 +307,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     user_work_years = calc_resume_work_years(work_experiences)
 
     last_work_experience = get_last_work_experience(work_experiences)
-    last_work_experience_description = last_work_experience.get("description") or ""
+    # last_work_experience_description = last_work_experience.get("description") or ""
     last_work_experience_job_title = last_work_experience.get("job") or ""
 
     if last_work_experience_job_title:
@@ -332,100 +332,40 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         f"app_user_id:{app_user_id} user_job_type: {desired_job_type_list} positions: {positions} "
         f"user_locations: {user_locations} skills: {skills}"
     )
-    if user_locations:
-        basic_recall_job_limit = int(top_k/len(user_locations))
-        basic_recall_jobs = await base_recall_jobs_multi_location(
-            app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
-            skills=predict_professional_skills, locations=user_locations, limit=basic_recall_job_limit
-        )
-        logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(basic_recall_jobs)} by positions")
-        recall_job_ids = [str(job["job_id"]) for job in basic_recall_jobs]
-        job_dict = {
-            str(job["job_id"]): dict(
-                title=dict(score=1),
-                function=dict(score=1),
-                job_type=dict(score=1),
-                distance_meters=job["distance_meters"]
-            ) for job in basic_recall_jobs
-        }
-        # if len(basic_recall_jobs) < 12 and skills:
-        #     skill_basic_recall_jobs = await base_recall_jobs_multi_location(
-        #         job_type=desired_job_type_list, titles=skills, locations=user_locations, limit=basic_recall_job_limit
-        #     )
-        #     logger.info(f"app_user_id:{app_user_id} basic_recall_jobs total: {len(skill_basic_recall_jobs)} by skills")
-        #     for skill_job in skill_basic_recall_jobs:
-        #         if str(skill_job["job_id"]) not in recall_job_ids:
-        #             recall_job_ids.append(str(skill_job["job_id"]))
-        #             job_dict[str(skill_job["job_id"])] = dict(
-        #                     title=dict(score=0.8),
-        #                     function=dict(score=0.8),
-        #                     job_type=dict(score=1),
-        #                     distance_meters=skill_job["distance_meters"]
-        #                 )
-    else:
-        if skills:
-            logger.info(f"app_user_id:{app_user_id} skills: {skills}")
-            job_skill_score_results = await resume_skill_recall_job_ids(skills, top_k=top_k)
-            for job_skill_score_result in job_skill_score_results:
-                job_id = job_skill_score_result["job_id"]
-                if job_id not in skill_job_dict:
-                    skill_job_dict[job_id] = {}
-                skill_job_dict[job_id]["skill"] = job_skill_score_result
-            logger.info(f"app_user_id:{app_user_id} skill recall finish, total: {len(job_skill_score_results)}")
+    if not user_locations:
+        return []
 
-        logger.info(f"app_user_id:{app_user_id} positions: {positions}")
-        if positions:
-            job_title_score_results = await resume_desired_positions_and_job_title_recall_job_ids(positions, top_k=top_k)
-            for job_title_score_result in job_title_score_results:
-                job_id = str(job_title_score_result["job_id"])
-                if job_id not in job_dict:
-                    job_dict[job_id] = {}
-                job_dict[job_id]["title"] = job_title_score_result
-            logger.info(f"app_user_id:{app_user_id} job title recall finish, total: {len(job_title_score_results)}")
-
-            job_function_score_results = await resume_desired_positions_and_job_function_recall_job_ids(positions, top_k=top_k)
-            for job_function_score_result in job_function_score_results:
-                job_id = str(job_function_score_result["job_id"])
-                if job_id not in job_dict:
-                    job_dict[job_id] = {}
-                job_dict[job_id]["function"] = job_function_score_result
-            logger.info(f"app_user_id:{app_user_id} job function recall finish, total: {len(job_function_score_results)}")
-
-        matched_all_responsibility_ids = []
-        if last_work_experience_description:
-            last_work_experience_contents = split_sentences(last_work_experience_description)
-            logger.info(f"app_user_id:{app_user_id} last_work_experience_contents: {last_work_experience_contents}")
-            experience_score_results = await resume_work_experiences_recall_job_ids(last_work_experience_contents, top_k=top_k)
-            for experience_score_result in experience_score_results:
-                job_id = str(experience_score_result["job_id"])
-                if job_id not in responsibility_job_dict:
-                    responsibility_job_dict[job_id] = {}
-                responsibility_job_dict[job_id]["experience"] = experience_score_result
-                responsibility_ids = experience_score_result.get("responsibility_ids")
-                for responsibility_id in responsibility_ids:
-                    if responsibility_id not in matched_all_responsibility_ids:
-                        matched_all_responsibility_ids.append(responsibility_id)
-
-            logger.info(f"app_user_id:{app_user_id} experience recall finish, total: {len(experience_score_results)}")
-
-        logger.info(f"app_user_id:{app_user_id} recall jobs total: {len(job_dict)}")
-
-        logger.info(
-            f"app_user_id:{app_user_id} matched all responsibility_ids total: {len(matched_all_responsibility_ids)}"
-        )
-        recall_job_ids = list(job_dict.keys())
-
+    basic_recall_job_limit = int(top_k/len(user_locations))
+    basic_recall_jobs = await base_recall_jobs_multi_location(
+        app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
+        skills=predict_professional_skills, locations=user_locations, limit=basic_recall_job_limit
+    )
+    logger.info(f"app_user_id:{app_user_id} base_recall_jobs_multi_location total: {len(basic_recall_jobs)}")
+    recall_job_ids = [str(job["job_id"]) for job in basic_recall_jobs]
+    job_dict = {
+        str(job["job_id"]): dict(
+            title=dict(score=1),
+            function=dict(score=1),
+            job_type=dict(score=1),
+            distance_meters=job["distance_meters"],
+            relevance_score=job["relevance_score"],
+        ) for job in basic_recall_jobs
+    }
     jobs = await get_jobs(recall_job_ids)
-    logger.info(f"app_user_id:{app_user_id} get jobs from graphdb total: {len(jobs)}")
+    logger.info(f"app_user_id:{app_user_id} get jobs total: {len(jobs)}")
     if not jobs:
         return []
 
-    match_results = []
+    company_diversity_dict = {}
+    match_results, secondary_match_results = [], []
     for job in jobs:
         job_id = job["id"]
+        company_id = job["company_id"]
         job_skills = job["skills"]
-
+        if not job.get("responsibilities"):
+            continue
         score_detail = job_dict.get(job_id) or {}
+        # relevance_score = score_detail.get("relevance_score") or 0
         skill_match_result = skill_job_dict.get(job_id, {}).get("skill")
         if skill_match_result:
             score_detail["skill"] = skill_match_result
@@ -482,23 +422,31 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         if desired_job_type_list and bool(set(desired_job_type_list) & set(job_type)):
             score_detail["job_type_score"] = 1
 
-        if major_name_list and bool(
-                set(major.lower() for major in major_name_list) & set([m["name"].lower() for m in job.get("majors", [])])
+        job_majors = job.get("majors") or []
+        fix_job_majors = [major for major in job_majors if isinstance(major, str)]
+        if not fix_job_majors:
+            fix_job_majors = [major["name"] for major in job_majors if isinstance(major, dict)]
+        if major_name_list and fix_job_majors and bool(
+                set(major.lower() for major in major_name_list) & set(fix_job_majors)
         ):
             score_detail["major_score"] = 1
             score = score + 0.1
 
         if score == 0:
             continue
-
         score_detail["score"] = score
         score_detail["reason"] = generate_reasons(score_detail, job)
         job = dict(job_id=job_id, score=max(0, score), detail=score_detail)
-        match_results.append(job)
-
+        if company_id not in company_diversity_dict:
+            company_diversity_dict[company_id] = True
+            job["score"] = job["score"] + 2
+            match_results.append(job)
+        else:
+            secondary_match_results.append(job)
     elapsed = time.perf_counter() - start
-    logger.info(f"app_user_id: {app_user_id} match jobs total: {len(match_results)} elapsed: {elapsed:.6f}s")
-    return match_results
+    total_match_results = match_results + secondary_match_results
+    logger.info(f"app_user_id: {app_user_id} match jobs total: {len(total_match_results)} elapsed: {elapsed:.6f}s")
+    return total_match_results
 
 
 if __name__ == '__main__':
