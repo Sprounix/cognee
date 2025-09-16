@@ -359,7 +359,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     company_diversity_dict = {}
     match_results, secondary_match_results = [], []
     for job in jobs:
-        job_id = job["id"]
+        job_id = str(job["id"])
         company_id = job["company_id"]
         job_skills = job["skills"]
         if not job.get("responsibilities"):
