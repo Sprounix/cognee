@@ -149,21 +149,20 @@ def get_last_work_experience(work_experiences):
 def calc_basic_score_by_weight(score_detail, weight_dict=None):
     score_detail = score_detail or {}
     weight_dict = weight_dict or {
-        "title": 0.25, "skill": 0.25,  "experience": 0.25, "yoe_score": 0.25,
+        "relevance": 0.5, "skill": 0.25,  "experience": 0.25, "yoe_score": 0.25,
     }
+    relevance_score = min(float(score_detail.get("relevance_score") or 0)/20, 1)
 
-    job_title_match = 1 if score_detail.get("title") else 0
-    job_function_match = 1 if score_detail.get("function") else 0
-    job_title_score = job_title_match * 0.7 + job_function_match * 0.3
+    # job_title_match = 1 if score_detail.get("title") else 0
+    # job_function_match = 1 if score_detail.get("function") else 0
+    # job_title_score = job_title_match * 0.7 + job_function_match * 0.3
 
     skill_score = score_detail.get("skill", {}).get("score") or 0
     relevant_experience_score = score_detail.get("experience", {}).get("score") or 0
     yoe = score_detail.get("yoe") or {}
     yoe_score = yoe.get("score") or 0
-
-    score = job_title_score * weight_dict["title"] + \
+    score = relevance_score * weight_dict["relevance"] + \
               skill_score * weight_dict["skill"] + \
-              relevant_experience_score * weight_dict["experience"] + \
               yoe_score * weight_dict["yoe_score"]
     return score
 
@@ -365,7 +364,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         if not job.get("responsibilities"):
             continue
         score_detail = job_dict.get(job_id) or {}
-        # relevance_score = score_detail.get("relevance_score") or 0
+        relevance_score = min(float(score_detail.get("relevance_score") or 0)/20, 1)
+
         skill_match_result = skill_job_dict.get(job_id, {}).get("skill")
         if skill_match_result:
             score_detail["skill"] = skill_match_result
@@ -431,9 +431,11 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         ):
             score_detail["major_score"] = 1
             score = score + 0.1
-
+        if relevance_score < 0.1:
+            continue
         if score == 0:
             continue
+        score = score
         score_detail["score"] = score
         score_detail["reason"] = generate_reasons(score_detail, job)
         job = dict(job_id=job_id, score=max(0, score), detail=score_detail)

@@ -143,9 +143,9 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
             ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score
         FROM (
             SELECT DISTINCT ON (location, job_md5)
-                id, title, location, job_md5, posted_time, job_type
+                id, title, location, job_md5, posted_time, job_type, status
             FROM job_details 
-            WHERE posted_time >= NOW() - INTERVAL '{posted_time_last_days} days'
+            WHERE posted_time >= NOW() - INTERVAL '{posted_time_last_days} days' 
             ORDER BY location, job_md5, posted_time DESC, id DESC
         ) AS jd 
         JOIN job_locations AS loc ON jd.id = loc.job_id 
@@ -158,6 +158,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
                     {radius}
                 )
             AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
+            AND jd.status = 'active'
             {job_type_sql}
             AND jsi.weighted_tsvector @@ query
         ORDER BY relevance_score DESC
