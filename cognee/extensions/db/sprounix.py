@@ -158,6 +158,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
                     {radius}
                 )
             AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
+            AND NOT EXISTS (SELECT 1 FROM precomputed_recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND jd.status = 'active'
             {job_type_sql}
             AND jsi.weighted_tsvector @@ query
