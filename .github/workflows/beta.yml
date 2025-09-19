@@ -2,9 +2,9 @@ name: Prod Deployment EC2 Docker Compose
 
 on:
   push:
-    branches: ["main"]
+    branches: ["beta"]
   pull_request:
-    branches: ["main"]
+    branches: ["beta"]
 
 jobs:
   aws-ssm-and-deploy:
@@ -23,9 +23,9 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --instance-ids i-0a05026b22c7318fa \
             --parameters commands='[
-              "cd /home/ubuntu/cognee",
+              "cd /home/ubuntu/cognee_beta",
               "sudo -u ubuntu git pull",
-              "sudo docker compose --env-file .env.prod -f docker-compose.prod.yaml up -d --build --remove-orphans"
+              "sudo docker compose --env-file .env.prod -f docker-compose.beta.yaml up -d --build --remove-orphans"
             ]' \
             --comment "Pull latest changes and build Docker image" \
             --region us-east-2

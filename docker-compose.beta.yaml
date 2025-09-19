@@ -1,0 +1,29 @@
+services:
+  cognee:
+    container_name: cognee_beta
+    restart: always
+    networks:
+      - cognee-network
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./cognee:/app/cognee
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - .env:/app/.env
+    environment:
+      - DEBUG=false # Change to true if debugging
+      - HOST=0.0.0.0
+      - ENVIRONMENT=beta
+      - LOG_LEVEL=ERROR
+    extra_hosts:
+      # Allows the container to reach your local machine using "host.docker.internal" instead of "localhost"
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9875:8000"
+
+networks:
+  cognee-network:
+    name: cognee-network
+#    external: true
