@@ -362,6 +362,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         job_id = str(job["id"])
         company_id = job["company_id"]
         job_skills = job["skills"]
+        job_level = job.get("job_level")
         if not job.get("responsibilities"):
             continue
         score_detail = job_dict.get(job_id) or {}
@@ -382,13 +383,6 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         if experience_match_result:
             score_detail["experience"] = experience_match_result
 
-        # job_level = job.get("job_level")
-        # if job_level:
-        #     user_job_level_code = get_job_level_code(job_level)
-        #     job_level_code = get_job_level_code(job_level)
-        #     score_detail["level_score"] = calc_job_level(job_level_code, user_job_level_code)
-        #     score = score * score_detail["level_score"]
-
         job_work_years = get_job_work_years(job)
         # logger.info(f"app_user_id:{app_user_id} job_work_years: {job_work_years} user_work_years:{user_work_years}")
         if job_work_years:
@@ -398,7 +392,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             )
             if yoe_score < 0.6:
                 continue
-
+        if user_work_years <= 2 and job_level and job_level not in ["Internship", "Entry level"]:
+            continue
         # base score
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
 
