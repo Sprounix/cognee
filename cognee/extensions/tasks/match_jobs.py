@@ -371,6 +371,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     match_results, secondary_match_results = [], []
     for job in jobs:
         job_id = str(job["id"])
+        title = job["title"]
         company_id = job["company_id"]
         job_skills = job["skills"]
         job_level = job.get("job_level")
@@ -405,8 +406,11 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             )
             if yoe_score < 0.6:
                 continue
-        if user_work_years <= 2 and job_level and job_level not in entry_levels:
-            continue
+        if user_work_years <= 0.5:
+            if job_level and job_level not in entry_levels:
+                continue
+            if "new grad" in title.lower():
+                score_detail["relevance_score"] = score_detail["relevance_score"] + 10
         # base score
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
 
