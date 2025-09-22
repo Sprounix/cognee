@@ -95,11 +95,13 @@ async def get_jobs(job_ids):
         responsibilities = result.get("responsibilities") or []
         qualification = result.get("qualification") or {}
         work_years = result.get("work_years") or ""
+        job_level = result.get("job_level") or ""
         job["skills"] = skills
         job["majors"] = majors
         job["qualification"] = qualification
         job["responsibilities"] = responsibilities
         job["work_years"] = work_years
+        job["e_job_level"] = job_level
     return results
 
 

@@ -280,6 +280,12 @@ async def base_recall_jobs_multi_location(
     return merged
 
 
+def fix_job_level(job_level, e_job_level):
+    if job_level == "Not Applicable" and e_job_level != "Not Applicable":
+        return e_job_level
+    return job_level
+
+
 async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     start = time.perf_counter()
     desired_position = payload.desired_position
@@ -302,6 +308,12 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     # job_level = resume.get("job_level") or []
     desired_job_type_list = desired_position.get("job_type") or []
     desired_job_type_list = [job_type for job_type in desired_job_type_list if job_type != "Not sure yet"]
+
+    find_internship_job = "Internship" in desired_job_type_list
+
+    entry_levels = ["Not Applicable", "Entry level"]
+    if find_internship_job:
+        entry_levels.append("Internship")
 
     user_work_years = calc_resume_work_years(work_experiences)
 
@@ -358,11 +370,12 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     company_diversity_dict = {}
     match_results, secondary_match_results = [], []
     for job in jobs:
-        posted_time = job["posted_time"]
         job_id = str(job["id"])
         company_id = job["company_id"]
         job_skills = job["skills"]
         job_level = job.get("job_level")
+        e_job_level = job.get("e_job_level")
+        job_level = fix_job_level(job_level, e_job_level)
         if not job.get("responsibilities"):
             continue
         score_detail = job_dict.get(job_id) or {}
@@ -392,7 +405,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             )
             if yoe_score < 0.6:
                 continue
-        if user_work_years <= 2 and job_level and job_level not in ["Internship", "Entry level"]:
+        if user_work_years <= 2 and job_level and job_level not in entry_levels:
             continue
         # base score
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
