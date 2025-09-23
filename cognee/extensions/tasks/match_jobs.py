@@ -5,14 +5,10 @@ from typing import Dict, List, Tuple
 
 from cognee.api.v1.recall.schemas import RecommendJobPayloadDTO
 from cognee.extensions.cypher.job import get_internship_jobs
-from cognee.extensions.db.sprounix import base_recall_jobs, get_user_locations, get_jobs
-from cognee.extensions.tasks.recall_job import (
-    resume_skill_recall_job_ids,
-    resume_desired_positions_and_job_title_recall_job_ids,
-    resume_desired_positions_and_job_function_recall_job_ids,
-    resume_work_experiences_recall_job_ids
+from cognee.extensions.db.sprounix import (
+    base_recall_jobs, get_user_locations, get_jobs, base_recall_jobs_exclude_location
 )
-from cognee.extensions.utils.extract import extract_experience_years, split_sentences
+from cognee.extensions.utils.extract import extract_experience_years
 from cognee.shared.logging_utils import get_logger
 
 logger = get_logger("match_job")
@@ -295,7 +291,6 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
 
     desired_locations = desired_position.get("city") or []
     desired_positions = desired_position.get("positions") or []
-    industries = desired_position.get("industries") or []
 
     predict_job_titles = desired_position.get("predict_job_titles") or []
     predict_professional_skills = desired_position.get("predict_professional_skills") or []
@@ -305,7 +300,6 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     educations = resume.get("educations") or []
     major_name_list = [edu["major_name"] for edu in educations if edu.get("major_name")]
 
-    # job_level = resume.get("job_level") or []
     desired_job_type_list = desired_position.get("job_type") or []
     desired_job_type_list = [job_type for job_type in desired_job_type_list if job_type != "Not sure yet"]
 
@@ -344,21 +338,26 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         f"user_locations: {user_locations} skills: {skills}"
     )
     if not user_locations:
-        return []
-
-    basic_recall_job_limit = int(top_k/len(user_locations))
-    basic_recall_jobs = await base_recall_jobs_multi_location(
-        app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
-        skills=predict_professional_skills, locations=user_locations, limit=basic_recall_job_limit
-    )
-    logger.info(f"app_user_id:{app_user_id} base_recall_jobs_multi_location total: {len(basic_recall_jobs)}")
+        basic_recall_jobs = await base_recall_jobs_exclude_location(
+            app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
+            skills=predict_professional_skills, limit=top_k
+        )
+        basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: x["relevance_score"], reverse=True)
+        logger.info(f"app_user_id:{app_user_id} base_recall_jobs_exclude_location total: {len(basic_recall_jobs)}")
+    else:
+        basic_recall_job_limit = int(top_k/len(user_locations))
+        basic_recall_jobs = await base_recall_jobs_multi_location(
+            app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
+            skills=predict_professional_skills, locations=user_locations, limit=basic_recall_job_limit
+        )
+        logger.info(f"app_user_id:{app_user_id} base_recall_jobs_multi_location total: {len(basic_recall_jobs)}")
     recall_job_ids = [str(job["job_id"]) for job in basic_recall_jobs]
     job_dict = {
         str(job["job_id"]): dict(
             title=dict(score=1),
             function=dict(score=1),
             job_type=dict(score=1),
-            distance_meters=job["distance_meters"],
+            distance_meters=job.get("distance_meters"),
             relevance_score=job["relevance_score"],
         ) for job in basic_recall_jobs
     }
