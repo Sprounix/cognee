@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import time
 from typing import Dict, List, Tuple
 
@@ -10,6 +9,7 @@ from cognee.extensions.db.sprounix import (
 )
 from cognee.extensions.utils.extract import extract_experience_years
 from cognee.shared.logging_utils import get_logger
+from cognee.extensions.utils.resume_parse import calc_max_degree_graduate_date, calc_resume_work_years
 
 logger = get_logger("match_job")
 
@@ -33,27 +33,6 @@ def get_job_level_code(job_level):
         elif job_level in senior_levels:
             return 3
     return 0
-
-def calc_date_diff_days(work_end, work_start):
-    days = (work_end - work_start).days
-    if days <= 0:
-        return 0
-    return round(days / 365, 1)
-
-
-def calc_resume_work_years(work_exps):
-    try:
-        start_date_list = [w["start_date"] for w in work_exps if "start_date" in w and w["start_date"]]
-        if not start_date_list:
-            return 0
-        first_start_date_str = sorted(start_date_list, reverse=False)[0]
-        now = datetime.date.today()
-        first_start_date = datetime.datetime.strptime(first_start_date_str, '%Y-%m-%d').date()
-        years = calc_date_diff_days(now, first_start_date)
-        return years
-    except:
-        return 0
-
 
 def calc_work_year_score(jd_work_years, resume_work_years):
     """
@@ -299,6 +278,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     work_experiences = resume.get("work_experiences") or []
     educations = resume.get("educations") or []
     major_name_list = [edu["major_name"] for edu in educations if edu.get("major_name")]
+    graduate_date = calc_max_degree_graduate_date(educations)
 
     desired_job_type_list = desired_position.get("job_type") or []
     desired_job_type_list = [job_type for job_type in desired_job_type_list if job_type != "Not sure yet"]
@@ -309,7 +289,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     if find_internship_job:
         entry_levels.append("Internship")
 
-    user_work_years = calc_resume_work_years(work_experiences)
+    user_post_graduation_work_years = calc_resume_work_years(work_experiences, graduate_date)
 
     last_work_experience = get_last_work_experience(work_experiences)
     # last_work_experience_description = last_work_experience.get("description") or ""
@@ -399,13 +379,15 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         job_work_years = get_job_work_years(job)
         # logger.info(f"app_user_id:{app_user_id} job_work_years: {job_work_years} user_work_years:{user_work_years}")
         if job_work_years:
-            yoe_score = calc_work_year_score(job_work_years, user_work_years)
+            yoe_score = calc_work_year_score(job_work_years, user_post_graduation_work_years)
             score_detail["yoe"] = dict(
-                score=yoe_score, job_work_years=job_work_years, user_work_years=user_work_years
+                score=yoe_score, job_work_years=job_work_years, post_graduation_work_years=user_post_graduation_work_years
             )
             if yoe_score < 0.6:
                 continue
-        if user_work_years <= 0.5:
+        if not find_internship_job and "intern" in title.lower():
+            continue
+        if user_post_graduation_work_years <= 0.5:
             if job_level and job_level not in entry_levels:
                 continue
             if "new grad" in title.lower():
