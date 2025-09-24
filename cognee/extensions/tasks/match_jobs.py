@@ -317,20 +317,22 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         f"app_user_id:{app_user_id} user_job_type: {desired_job_type_list} positions: {positions} "
         f"user_locations: {user_locations} skills: {skills}"
     )
-    if not user_locations:
-        basic_recall_jobs = await base_recall_jobs_exclude_location(
-            app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
-            skills=predict_professional_skills, limit=top_k
-        )
-        basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: x["relevance_score"], reverse=True)
-        logger.info(f"app_user_id:{app_user_id} base_recall_jobs_exclude_location total: {len(basic_recall_jobs)}")
-    else:
+    if user_locations and (positions or predict_professional_skills):
         basic_recall_job_limit = int(top_k/len(user_locations))
         basic_recall_jobs = await base_recall_jobs_multi_location(
             app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
             skills=predict_professional_skills, locations=user_locations, limit=basic_recall_job_limit
         )
         logger.info(f"app_user_id:{app_user_id} base_recall_jobs_multi_location total: {len(basic_recall_jobs)}")
+    elif positions or predict_professional_skills:
+        titles = positions + predict_professional_skills
+        basic_recall_jobs = await base_recall_jobs_exclude_location(
+            app_user_id=app_user_id, job_type=desired_job_type_list, titles=titles, limit=top_k
+        )
+        basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: x["relevance_score"], reverse=True)
+        logger.info(f"app_user_id:{app_user_id} base_recall_jobs_exclude_location total: {len(basic_recall_jobs)}")
+    else:
+        return []
     recall_job_ids = [str(job["job_id"]) for job in basic_recall_jobs]
     job_dict = {
         str(job["job_id"]): dict(
@@ -341,11 +343,12 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             relevance_score=job["relevance_score"],
         ) for job in basic_recall_jobs
     }
+    if not recall_job_ids:
+        return []
     jobs = await get_jobs(recall_job_ids)
     logger.info(f"app_user_id:{app_user_id} get jobs total: {len(jobs)}")
     if not jobs:
         return []
-
     company_diversity_dict = {}
     match_results, secondary_match_results = [], []
     for job in jobs:
