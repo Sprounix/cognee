@@ -330,7 +330,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     elif positions or predict_professional_skills:
         titles = positions + predict_professional_skills
         basic_recall_jobs = await base_recall_jobs_exclude_location(
-            app_user_id=app_user_id, job_type=desired_job_type_list, titles=titles, limit=top_k
+            app_user_id=app_user_id, job_type=desired_job_type_list, titles=titles,
+            user_post_graduation_work_years=user_post_graduation_work_years, limit=top_k
         )
         basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: x["relevance_score"], reverse=True)
         logger.info(f"app_user_id:{app_user_id} base_recall_jobs_exclude_location total: {len(basic_recall_jobs)}")
