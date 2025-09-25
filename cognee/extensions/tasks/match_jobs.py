@@ -390,8 +390,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             score_detail["yoe"] = dict(
                 score=yoe_score, job_work_years=job_work_years, post_graduation_work_years=user_post_graduation_work_years
             )
-            # if yoe_score < 0.6:
-            #     continue
+            if user_post_graduation_work_years > 1 and yoe_score < 0.6:
+                continue
         if not find_internship_job and "intern" in title.lower():
             continue
         if user_post_graduation_work_years <= 0.5:
