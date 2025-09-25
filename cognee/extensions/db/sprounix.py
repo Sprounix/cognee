@@ -2,7 +2,6 @@ import asyncio
 import re
 
 from cognee.extensions.db import get_sprounix_relational_engine
-from cognee.extensions.tasks.match_jobs import calc_job_level
 from cognee.shared.logging_utils import get_logger
 
 
