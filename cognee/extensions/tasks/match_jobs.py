@@ -239,7 +239,8 @@ def find_matching_skills(resume_skills: List[str], job_skills: List[str],
 
 
 async def base_recall_jobs_multi_location(
-        app_user_id: str, job_type: list, titles: list, skills: list, locations: list, limit: int = 1000
+        app_user_id: str, job_type: list, titles: list, skills: list, locations: list,
+        user_post_graduation_work_years: float, limit: int = 1000
 ):
     """
     multi location
@@ -247,7 +248,8 @@ async def base_recall_jobs_multi_location(
     """
     recall_results = await asyncio.gather(
         *[base_recall_jobs(
-            app_user_id=app_user_id, job_type=job_type, titles=titles, skills=skills, location=location, limit=limit
+            app_user_id=app_user_id, job_type=job_type, titles=titles, skills=skills, location=location,
+            user_post_graduation_work_years=user_post_graduation_work_years, limit=limit
         ) for location in locations]
     )
     merged = [item for sublist in recall_results for item in sublist]
@@ -321,7 +323,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         basic_recall_job_limit = int(top_k/len(user_locations))
         basic_recall_jobs = await base_recall_jobs_multi_location(
             app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
-            skills=predict_professional_skills, locations=user_locations, limit=basic_recall_job_limit
+            skills=predict_professional_skills, locations=user_locations,
+            user_post_graduation_work_years=user_post_graduation_work_years, limit=basic_recall_job_limit
         )
         logger.info(f"app_user_id:{app_user_id} base_recall_jobs_multi_location total: {len(basic_recall_jobs)}")
     elif positions or predict_professional_skills:
@@ -428,7 +431,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         ):
             score_detail["major_score"] = 1
             score = score + 0.1
-        if relevance_score < 0.1:
+        if user_post_graduation_work_years <= 1 and relevance_score < 0.05:
+            continue
+        elif user_post_graduation_work_years > 1 and relevance_score < 0.1:
             continue
         if score == 0:
             continue

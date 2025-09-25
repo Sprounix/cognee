@@ -2,6 +2,7 @@ import asyncio
 import re
 
 from cognee.extensions.db import get_sprounix_relational_engine
+from cognee.extensions.tasks.match_jobs import calc_job_level
 from cognee.shared.logging_utils import get_logger
 
 
@@ -211,7 +212,7 @@ async def base_recall_jobs_location(app_user_id: str, job_type: list, location: 
 
 
 async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skills: list, location: dict,
-                           limit: int = 1000, posted_time_last_days=30):
+                           user_post_graduation_work_years: float, limit: int = 1000, posted_time_last_days=30):
     """
     base recall jobs, by job_type & titles * location
     """
@@ -225,6 +226,11 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
     posted_time_last_days = posted_time_last_days or 30
     titles = titles or []
     core_skills = skills or []
+
+    if user_post_graduation_work_years < 1.5:
+        job_level_sql = f"AND jd.job_level IN ('Entry level', 'Not Applicable')"
+    else:
+        job_level_sql = f"AND jd.job_level NOT IN ('Entry level')"
 
     job_type_sql = ""
     if job_type:
@@ -268,6 +274,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
             AND NOT EXISTS (SELECT 1 FROM precomputed_recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND jd.status = 'active'
             {job_type_sql}
+            {job_level_sql}
             AND jsi.weighted_tsvector @@ query
         ORDER BY relevance_score DESC
         limit {limit}
