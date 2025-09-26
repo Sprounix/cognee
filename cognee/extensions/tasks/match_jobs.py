@@ -240,7 +240,7 @@ def find_matching_skills(resume_skills: List[str], job_skills: List[str],
 
 async def base_recall_jobs_multi_location(
         app_user_id: str, job_type: list, titles: list, skills: list, locations: list,
-        user_post_graduation_work_years: float, limit: int = 1000
+        user_post_graduation_work_years: float, find_internship_job: bool, limit: int = 1000
 ):
     """
     multi location
@@ -249,7 +249,8 @@ async def base_recall_jobs_multi_location(
     recall_results = await asyncio.gather(
         *[base_recall_jobs(
             app_user_id=app_user_id, job_type=job_type, titles=titles, skills=skills, location=location,
-            user_post_graduation_work_years=user_post_graduation_work_years, limit=limit
+            user_post_graduation_work_years=user_post_graduation_work_years, find_internship_job=find_internship_job,
+            limit=limit
         ) for location in locations]
     )
     merged = [item for sublist in recall_results for item in sublist]
@@ -324,14 +325,16 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         basic_recall_jobs = await base_recall_jobs_multi_location(
             app_user_id=app_user_id, job_type=desired_job_type_list, titles=positions,
             skills=predict_professional_skills, locations=user_locations,
-            user_post_graduation_work_years=user_post_graduation_work_years, limit=basic_recall_job_limit
+            user_post_graduation_work_years=user_post_graduation_work_years, find_internship_job=find_internship_job,
+            limit=basic_recall_job_limit
         )
         logger.info(f"app_user_id:{app_user_id} base_recall_jobs_multi_location total: {len(basic_recall_jobs)}")
     elif positions or predict_professional_skills:
         titles = positions + predict_professional_skills
         basic_recall_jobs = await base_recall_jobs_exclude_location(
             app_user_id=app_user_id, job_type=desired_job_type_list, titles=titles,
-            user_post_graduation_work_years=user_post_graduation_work_years, limit=top_k
+            user_post_graduation_work_years=user_post_graduation_work_years, find_internship_job=find_internship_job,
+            limit=top_k
         )
         basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: x["relevance_score"], reverse=True)
         logger.info(f"app_user_id:{app_user_id} base_recall_jobs_exclude_location total: {len(basic_recall_jobs)}")

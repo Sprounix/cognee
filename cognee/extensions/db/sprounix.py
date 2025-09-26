@@ -106,8 +106,8 @@ async def get_jobs(job_ids):
 
 
 async def base_recall_jobs_exclude_location(
-        app_user_id: str, job_type: list, titles: list, user_post_graduation_work_years: float, limit: int = 1000,
-        posted_time_last_days=30
+        app_user_id: str, job_type: list, titles: list, user_post_graduation_work_years: float,
+        find_internship_job: bool, limit: int = 1000, posted_time_last_days=30
 ):
     """
     base recall jobs, by job_type & titles * location
@@ -116,7 +116,9 @@ async def base_recall_jobs_exclude_location(
     posted_time_last_days = posted_time_last_days or 30
     titles = titles or []
 
-    if user_post_graduation_work_years < 1.5:
+    if find_internship_job:
+        job_level_sql = f"AND jd.job_level IN ('Internship', 'Entry level')"
+    elif user_post_graduation_work_years < 1.5:
         job_level_sql = f"AND jd.job_level IN ('Entry level', 'Not Applicable')"
     else:
         job_level_sql = f"AND jd.job_level NOT IN ('Entry level')"
@@ -218,7 +220,8 @@ async def base_recall_jobs_location(app_user_id: str, job_type: list, location: 
 
 
 async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skills: list, location: dict,
-                           user_post_graduation_work_years: float, limit: int = 1000, posted_time_last_days=30):
+                           user_post_graduation_work_years: float, find_internship_job: bool, limit: int = 1000,
+                           posted_time_last_days=30):
     """
     base recall jobs, by job_type & titles * location
     """
@@ -233,10 +236,12 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
     titles = titles or []
     core_skills = skills or []
 
-    if user_post_graduation_work_years < 1.5:
+    if find_internship_job:
+        job_level_sql = f"AND jd.job_level IN ('Internship', 'Entry level')"
+    elif user_post_graduation_work_years < 1.5:
         job_level_sql = f"AND jd.job_level IN ('Entry level', 'Not Applicable')"
     else:
-        job_level_sql = f"AND jd.job_level NOT IN ('Entry level')"
+        job_level_sql = f"AND jd.job_level NOT IN ('Internship', 'Entry level')"
 
     job_type_sql = ""
     if job_type:
