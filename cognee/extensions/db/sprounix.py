@@ -231,7 +231,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
 
     lng = location.get("lng")
     lat = location.get("lat")
-    radius = location.get("radius") or 50000
+    radius = int(int(location.get("radius") or 50) * 1.6 * 1000)  # miles to meter
     posted_time_last_days = posted_time_last_days or 30
     titles = titles or []
     core_skills = skills or []
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     job_type = ['Full-time', 'Part-time']
     titles = ["Operations Manager"]
     core_skills = ["Django", "Python", "Docker"]
-    location = dict(lng=-122.2913078, lat=37.8271784, radius=50000)
+    location = dict(lng=-122.2913078, lat=37.8271784, radius=50)
     asyncio.run(
         base_recall_jobs(app_user_id, job_type, titles, core_skills, location)
     )

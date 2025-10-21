@@ -27,3 +27,5 @@ networks:
   cognee-network:
     name: cognee-network
 #    external: true
+
+
