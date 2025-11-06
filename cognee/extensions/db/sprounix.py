@@ -82,6 +82,7 @@ async def get_jobs(job_ids):
             jd.job_function,
             jd.job_md5,
             jd.posted_time,
+            jd.source_type,
             jde.result
         FROM job_detail_extract_result AS jde 
         JOIN job_details AS jd ON jd.id = jde.id
@@ -143,7 +144,7 @@ async def base_recall_jobs_exclude_location(
             ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score
         FROM (
             SELECT DISTINCT ON (location, job_md5)
-                id, title, location, job_md5, posted_time, job_type, job_level, status
+                id, title, location, job_md5, posted_time, job_type, job_level, status, source_type
             FROM job_details 
             WHERE posted_time >= NOW() - INTERVAL '{posted_time_last_days} days' 
             ORDER BY location, job_md5, posted_time DESC, id DESC
@@ -151,13 +152,20 @@ async def base_recall_jobs_exclude_location(
         JOIN job_weighted_vector jsi ON jd.id = jsi.job_id 
         CROSS JOIN to_tsquery('english', '{tsquery_cond}') AS query
         WHERE jd.posted_time >= NOW() - INTERVAL '{posted_time_last_days} days'
+            AND NOT EXISTS (SELECT 1 FROM job_applications WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND NOT EXISTS (SELECT 1 FROM precomputed_recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND jd.status = 'active'
             {job_type_sql}
             {job_level_sql}
             AND jsi.weighted_tsvector @@ query
-        ORDER BY relevance_score DESC
+        ORDER BY
+            CASE 
+                WHEN jd.source_type = 'host' THEN 1
+                WHEN jd.source_type = 'index' THEN 2
+                ELSE 3
+            END, 
+            relevance_score DESC
         limit {limit}
     """
     logger.info(sql)
@@ -195,7 +203,7 @@ async def base_recall_jobs_location(app_user_id: str, job_type: list, location: 
             ) AS distance_meters
         FROM (
             SELECT DISTINCT ON (location, job_md5)
-                id, title, location, job_md5, posted_time, job_type, job_level, status
+                id, title, location, job_md5, posted_time, job_type, job_level, status, source_type
             FROM job_details 
             WHERE posted_time >= NOW() - INTERVAL '{posted_time_last_days} days' 
             ORDER BY location, job_md5, posted_time DESC, id DESC
@@ -207,11 +215,18 @@ async def base_recall_jobs_location(app_user_id: str, job_type: list, location: 
                     ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326)::geography, 
                     {radius}
                 )
+            AND NOT EXISTS (SELECT 1 FROM job_applications WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND NOT EXISTS (SELECT 1 FROM precomputed_recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND jd.status = 'active'
             {job_type_sql}
-        ORDER BY posted_time DESC
+        ORDER BY
+            CASE 
+                WHEN jd.source_type = 'host' THEN 1
+                WHEN jd.source_type = 'index' THEN 2
+                ELSE 3
+            END,
+            posted_time DESC
         limit {limit}
     """
     logger.info(sql)
@@ -267,7 +282,7 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
             ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score
         FROM (
             SELECT DISTINCT ON (location, job_md5)
-                id, title, location, job_md5, posted_time, job_type, job_level, status
+                id, title, location, job_md5, posted_time, job_type, job_level, status, source_type
             FROM job_details 
             WHERE posted_time >= NOW() - INTERVAL '{posted_time_last_days} days' 
             ORDER BY location, job_md5, posted_time DESC, id DESC
@@ -281,13 +296,20 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
                     ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326)::geography, 
                     {radius}
                 )
+            AND NOT EXISTS (SELECT 1 FROM job_applications WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND NOT EXISTS (SELECT 1 FROM recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND NOT EXISTS (SELECT 1 FROM precomputed_recommend_jobs WHERE app_user_id='{app_user_id}' AND job_id = jd.id)
             AND jd.status = 'active'
             {job_type_sql}
             {job_level_sql}
             AND jsi.weighted_tsvector @@ query
-        ORDER BY relevance_score DESC
+        ORDER BY
+            CASE 
+                WHEN jd.source_type = 'host' THEN 1
+                WHEN jd.source_type = 'index' THEN 2
+                ELSE 3
+            END,
+            relevance_score DESC
         limit {limit}
     """
     logger.info(sql)
