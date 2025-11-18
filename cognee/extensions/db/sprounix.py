@@ -117,12 +117,13 @@ async def base_recall_jobs_exclude_location(
     posted_time_last_days = posted_time_last_days or 30
     titles = titles or []
 
+    job_level_sql = ""
     if find_internship_job:
         job_level_sql = f"AND jd.job_level IN ('Internship', 'Entry level')"
     elif user_post_graduation_work_years < 1.5:
         job_level_sql = f"AND jd.job_level IN ('Entry level', 'Not Applicable')"
-    else:
-        job_level_sql = f"AND jd.job_level NOT IN ('Entry level')"
+    # else:
+    #     job_level_sql = f"AND jd.job_level NOT IN ('Entry level')"
 
     job_type_sql = ""
     if job_type:
