@@ -9,7 +9,10 @@ from cognee.extensions.db.sprounix import (
 )
 from cognee.extensions.utils.extract import extract_experience_years
 from cognee.shared.logging_utils import get_logger
-from cognee.extensions.utils.resume_parse import calc_max_degree_graduate_date, calc_resume_work_years
+from cognee.extensions.utils.resume_parse import (
+    calc_first_degree_graduate_date,
+    calc_resume_work_years
+)
 
 logger = get_logger("match_job")
 
@@ -281,7 +284,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
     work_experiences = resume.get("work_experiences") or []
     educations = resume.get("educations") or []
     major_name_list = [edu["major_name"] for edu in educations if edu.get("major_name")]
-    graduate_date = calc_max_degree_graduate_date(educations)
+    graduate_date = calc_first_degree_graduate_date(educations)
 
     desired_job_type_list = desired_position.get("job_type") or []
     desired_job_type_list = [job_type for job_type in desired_job_type_list if job_type != "Not sure yet"]

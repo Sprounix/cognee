@@ -20,6 +20,21 @@ def calc_max_degree_graduate_date(educations, reverse=True):
     return last_end_time
 
 
+def calc_first_degree_graduate_date(educations):
+    if not educations:
+        return
+    not_yet_graduated = [1 for edu in educations if edu.get("present") is True]
+    if not_yet_graduated and len(not_yet_graduated) == 1:
+        return datetime.now().date()
+    educations = [edu for edu in educations if edu.get("end_date")]
+    if not educations:
+        return
+    educations.sort(key=lambda x: x["end_date"], reverse=False)
+    graduate_date_str = educations[0]['end_date']
+    graduate_date = datetime.strptime(graduate_date_str, '%Y-%m-%d').date()
+    return graduate_date
+
+
 def calc_date_diff_days(work_end, work_start):
     days = (work_end - work_start).days
     if days <= 0:
