@@ -446,7 +446,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
         if score == 0:
             continue
         # host job
-        if score_detail["source_type"] == 1:
+        if score_detail["source_type"] == "host":
             score = score + 20
         score_detail["score"] = score
         score_detail["reason"] = generate_reasons(score_detail, job)
