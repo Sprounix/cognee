@@ -257,7 +257,7 @@ async def base_recall_jobs_multi_location(
         ) for location in locations]
     )
     merged = [item for sublist in recall_results for item in sublist]
-    merged = sorted(merged, key=lambda x: x["relevance_score"], reverse=True)
+    merged = sorted(merged, key=lambda x: (x["source_type"], -x["relevance_score"]))
     return merged
 
 
@@ -339,7 +339,8 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             user_post_graduation_work_years=user_post_graduation_work_years, find_internship_job=find_internship_job,
             limit=top_k
         )
-        basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: x["relevance_score"], reverse=True)
+        # basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: x["relevance_score"], reverse=True)
+        basic_recall_jobs = sorted(basic_recall_jobs, key=lambda x: (x["source_type"], -x["relevance_score"]))
         logger.info(f"app_user_id:{app_user_id} base_recall_jobs_exclude_location total: {len(basic_recall_jobs)}")
     else:
         return []
@@ -351,6 +352,7 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             job_type=dict(score=1),
             distance_meters=job.get("distance_meters"),
             relevance_score=job["relevance_score"],
+            source_type=job["source_type"],
         ) for job in basic_recall_jobs
     }
     if not recall_job_ids:
@@ -407,7 +409,6 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
                 score_detail["relevance_score"] = score_detail["relevance_score"] + 10
         # base score
         score_detail["b_score"] = calc_basic_score_by_weight(score_detail)
-
         score = score_detail["b_score"]
         if user_locations:
             distance_meters = score_detail.get("distance_meters") or None
@@ -444,7 +445,9 @@ async def get_match_jobs(payload: RecommendJobPayloadDTO) -> List[Dict]:
             continue
         if score == 0:
             continue
-        score = score
+        # host job
+        if score_detail["source_type"] == 1:
+            score = score + 20
         score_detail["score"] = score
         score_detail["reason"] = generate_reasons(score_detail, job)
         job = dict(job_id=job_id, score=max(0, score), detail=score_detail)

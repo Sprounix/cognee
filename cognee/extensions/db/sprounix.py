@@ -142,7 +142,8 @@ async def base_recall_jobs_exclude_location(
         SELECT 
             jd.id AS job_id,
             -- jd.title,
-            ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score
+            ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score,
+            jd.source_type
         FROM (
             SELECT DISTINCT ON (location, job_md5)
                 id, title, location, job_md5, posted_time, job_type, job_level, status, source_type
@@ -280,7 +281,8 @@ async def base_recall_jobs(app_user_id: str, job_type: list, titles: list, skill
                 loc.geom::geography, 
                 ST_SetSRID(ST_MakePoint({lng}, {lat}), 4326)::geography
             ) AS distance_meters,
-            ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score
+            ts_rank_cd('{weights}', jsi.weighted_tsvector, query) AS relevance_score,
+            jd.source_type
         FROM (
             SELECT DISTINCT ON (location, job_md5)
                 id, title, location, job_md5, posted_time, job_type, job_level, status, source_type
